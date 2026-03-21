@@ -14,6 +14,10 @@ interface SidebarProps {
   selectedRepo?: string;
   selectedBranch?: string;
   todayStats?: { sessions: number; tokens: number; toolCalls: number };
+  bookmarkCount: number;
+  tagCounts: { tag: string; count: number }[];
+  selectedTag?: string;
+  showBookmarked?: boolean;
 }
 
 export default function Sidebar({
@@ -21,6 +25,10 @@ export default function Sidebar({
   selectedRepo,
   selectedBranch,
   todayStats,
+  bookmarkCount,
+  tagCounts,
+  selectedTag,
+  showBookmarked,
 }: SidebarProps) {
   const isAllActive = !selectedRepo && !selectedBranch;
 
@@ -200,6 +208,49 @@ export default function Sidebar({
           );
         })}
       </div>
+
+      {/* Bookmarks */}
+      <div style={{ borderTop: "1px solid #222", padding: "12px 16px" }}>
+        <a
+          href="/?bookmarked=true"
+          style={{
+            color: showBookmarked ? "#00ff41" : "#888",
+            textDecoration: "none",
+            fontSize: "12px",
+            display: "block",
+            padding: "4px 0",
+            borderLeft: showBookmarked ? "2px solid #00ff41" : "2px solid transparent",
+            paddingLeft: "8px",
+          }}
+        >
+          ★ Bookmarked ({bookmarkCount})
+        </a>
+      </div>
+
+      {/* Tags */}
+      {tagCounts.length > 0 && (
+        <div style={{ padding: "0 16px 12px" }}>
+          <div style={{ color: "#555", fontSize: "10px", textTransform: "uppercase", marginBottom: "4px" }}>
+            Tags
+          </div>
+          {tagCounts.map(({ tag, count }) => (
+            <a
+              key={tag}
+              href={`/?tag=${tag}`}
+              style={{
+                color: selectedTag === tag ? "#00ff41" : "#888",
+                textDecoration: "none",
+                fontSize: "12px",
+                display: "block",
+                padding: "2px 0 2px 8px",
+                borderLeft: selectedTag === tag ? "2px solid #00ff41" : "2px solid transparent",
+              }}
+            >
+              {tag} ({count})
+            </a>
+          ))}
+        </div>
+      )}
 
       {/* Bottom stats */}
       {todayStats && (

@@ -1,19 +1,21 @@
 export const dynamic = "force-dynamic";
 
 import { getAllSessions, getProjects, getStats } from "@/lib/claude-data";
+import { getAllSessionMetadata } from "@/lib/session-metadata";
 import SessionList from "@/src/components/session-list";
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ repo?: string; branch?: string }>;
+  searchParams: Promise<{ repo?: string; branch?: string; bookmarked?: string; tag?: string }>;
 }) {
-  const { repo, branch } = await searchParams;
+  const { repo, branch, bookmarked, tag } = await searchParams;
 
-  const [sessions, repos, stats] = await Promise.all([
+  const [sessions, repos, stats, allMetadata] = await Promise.all([
     getAllSessions(),
     getProjects(),
     getStats(),
+    getAllSessionMetadata(),
   ]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -55,6 +57,24 @@ export default async function Home({
   if (branch) {
     filtered = filtered.filter((s) => s.branch === branch);
   }
+  if (bookmarked === "true") {
+    filtered = filtered.filter((s) => allMetadata[s.id]?.bookmarked === true);
+  }
+  if (tag) {
+    filtered = filtered.filter((s) => allMetadata[s.id]?.tags?.includes(tag));
+  }
+
+  // Compute sidebar metadata
+  const bookmarkCount = Object.values(allMetadata).filter((m) => m.bookmarked).length;
+  const tagCountMap = new Map<string, number>();
+  for (const meta of Object.values(allMetadata)) {
+    for (const t of meta.tags || []) {
+      tagCountMap.set(t, (tagCountMap.get(t) || 0) + 1);
+    }
+  }
+  const tagCounts = Array.from(tagCountMap.entries())
+    .map(([t, count]) => ({ tag: t, count }))
+    .sort((a, b) => a.tag.localeCompare(b.tag));
 
   return (
     <SessionList
@@ -63,6 +83,11 @@ export default async function Home({
       selectedRepo={repo}
       selectedBranch={branch}
       todayStats={todayStats}
+      allMetadata={allMetadata}
+      bookmarkCount={bookmarkCount}
+      tagCounts={tagCounts}
+      selectedTag={tag}
+      showBookmarked={bookmarked === "true"}
     />
   );
 }

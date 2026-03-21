@@ -1,5 +1,6 @@
 import Sidebar from "@/src/components/sidebar";
 import SessionRow from "@/src/components/session-row";
+import type { SessionMetadata } from "@/lib/types";
 
 interface SerializedSession {
   id: string;
@@ -32,6 +33,11 @@ interface SessionListProps {
   selectedRepo?: string;
   selectedBranch?: string;
   todayStats?: { sessions: number; tokens: number; toolCalls: number };
+  allMetadata: Record<string, SessionMetadata>;
+  bookmarkCount: number;
+  tagCounts: { tag: string; count: number }[];
+  selectedTag?: string;
+  showBookmarked?: boolean;
 }
 
 export default function SessionList({
@@ -40,9 +46,22 @@ export default function SessionList({
   selectedRepo,
   selectedBranch,
   todayStats,
+  allMetadata,
+  bookmarkCount,
+  tagCounts,
+  selectedTag,
+  showBookmarked,
 }: SessionListProps) {
-  const hasFilter = selectedRepo || selectedBranch;
+  const hasFilter = selectedRepo || selectedBranch || showBookmarked || selectedTag;
   const selectedRepoName = repos.find((r) => r.path === selectedRepo)?.name;
+
+  // Build returnUrl from current filter state
+  const params: string[] = [];
+  if (selectedRepo) params.push(`repo=${encodeURIComponent(selectedRepo)}`);
+  if (selectedBranch) params.push(`branch=${encodeURIComponent(selectedBranch)}`);
+  if (showBookmarked) params.push("bookmarked=true");
+  if (selectedTag) params.push(`tag=${encodeURIComponent(selectedTag)}`);
+  const returnUrl = params.length > 0 ? `/?${params.join("&")}` : "/";
 
   return (
     <div
@@ -57,6 +76,10 @@ export default function SessionList({
         selectedRepo={selectedRepo}
         selectedBranch={selectedBranch}
         todayStats={todayStats}
+        bookmarkCount={bookmarkCount}
+        tagCounts={tagCounts}
+        selectedTag={selectedTag}
+        showBookmarked={showBookmarked}
       />
 
       {/* Drag handle for sidebar resize */}
@@ -134,6 +157,14 @@ export default function SessionList({
                 {selectedBranch}
               </span>
             )}
+            {showBookmarked && (
+              <span style={{ color: "#ffaa00" }}>★ bookmarked</span>
+            )}
+            {selectedTag && (
+              <span style={{ color: "var(--text-secondary)" }}>
+                tag:{selectedTag}
+              </span>
+            )}
           </div>
         )}
 
@@ -141,7 +172,7 @@ export default function SessionList({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "20px 1fr 140px 80px 60px 50px 80px 28px",
+            gridTemplateColumns: "20px 1fr 140px 80px 60px 50px 80px 60px",
             gap: "0 12px",
             padding: "6px 16px",
             borderBottom: "1px solid var(--border)",
@@ -167,9 +198,23 @@ export default function SessionList({
 
         {/* Session rows */}
         {sessions.length > 0 ? (
-          sessions.map((session) => (
-            <SessionRow key={session.id} session={session} showSummary={!!selectedRepo} />
-          ))
+          sessions.map((session) => {
+            const meta = allMetadata[session.id];
+            const notesText = meta?.notes || "";
+            return (
+              <SessionRow
+                key={session.id}
+                session={session}
+                showSummary={!!selectedRepo}
+                bookmarked={meta?.bookmarked}
+                tags={meta?.tags}
+                hasNotes={!!notesText}
+                notesPreview={notesText ? notesText.slice(0, 80) : undefined}
+                returnUrl={returnUrl}
+                projectPath={session.projectPath}
+              />
+            );
+          })
         ) : (
           <div
             style={{

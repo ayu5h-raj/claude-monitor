@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { formatTokenCount } from "@/lib/path-utils";
+import { BookmarkButton } from "@/src/components/bookmark-button";
+import { TagPills } from "@/src/components/tag-pills";
 
 interface SessionRowProps {
   session: {
@@ -15,6 +17,12 @@ interface SessionRowProps {
     firstMessage?: string;
   };
   showSummary?: boolean;
+  bookmarked?: boolean;
+  tags?: string[];
+  hasNotes?: boolean;
+  notesPreview?: string;
+  returnUrl: string;
+  projectPath: string;
 }
 
 function getRelativeTime(isoStr: string): string {
@@ -32,7 +40,16 @@ function getRelativeTime(isoStr: string): string {
   return `${seconds}s ago`;
 }
 
-export default function SessionRow({ session, showSummary }: SessionRowProps) {
+export default function SessionRow({
+  session,
+  showSummary,
+  bookmarked,
+  tags,
+  hasNotes,
+  notesPreview,
+  returnUrl,
+  projectPath,
+}: SessionRowProps) {
   const totalTokens =
     session.tokenUsage.input +
     session.tokenUsage.output +
@@ -44,7 +61,7 @@ export default function SessionRow({ session, showSummary }: SessionRowProps) {
       href={`/sessions/${session.id}`}
       style={{
         display: "grid",
-        gridTemplateColumns: "20px 1fr 140px 80px 60px 50px 80px 28px",
+        gridTemplateColumns: "20px 1fr 140px 80px 60px 50px 80px 60px",
         alignItems: "center",
         gap: "0 12px",
         padding: "8px 16px",
@@ -76,10 +93,19 @@ export default function SessionRow({ session, showSummary }: SessionRowProps) {
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
           fontSize: showSummary ? "12px" : undefined,
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
         }}
         title={showSummary ? session.firstMessage : session.project}
       >
-        {showSummary ? (session.firstMessage || session.project) : session.project}
+        <BookmarkButton sessionId={session.id} bookmarked={bookmarked || false} returnUrl={returnUrl} size="sm" />
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {showSummary ? (session.firstMessage || session.project) : session.project}
+        </span>
+        {tags && tags.length > 0 && (
+          <TagPills tags={tags} />
+        )}
       </span>
       <span
         style={{
@@ -104,19 +130,72 @@ export default function SessionRow({ session, showSummary }: SessionRowProps) {
       <span style={{ color: "var(--text-muted)", textAlign: "right", fontSize: "12px" }}>
         {getRelativeTime(session.lastActiveAt)}
       </span>
-      <span
-        data-copy-resume=""
-        data-cmd={`cd "${session.projectPath}" && claude --resume ${session.id}`}
-        title="Copy resume command"
-        style={{
-          color: "var(--text-muted)",
-          fontSize: "12px",
-          textAlign: "center",
-          cursor: "pointer",
-          lineHeight: 1,
-        }}
-      >
-        &#9654;
+      <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "4px" }}>
+        {hasNotes && (
+          <span
+            style={{ color: "#ffaa00", fontSize: "11px", position: "relative" }}
+            data-tooltip={notesPreview}
+            className="notes-tooltip"
+          >
+            ✎
+          </span>
+        )}
+        <span
+          data-copy-resume=""
+          data-cmd={`cd "${session.projectPath}" && claude --resume ${session.id}`}
+          title="Copy resume command"
+          style={{
+            color: "var(--text-muted)",
+            fontSize: "12px",
+            textAlign: "center",
+            cursor: "pointer",
+            lineHeight: 1,
+          }}
+        >
+          &#9654;
+        </span>
+        <details data-more-actions style={{ position: "relative", display: "inline-block" }}>
+          <summary style={{ cursor: "pointer", color: "#555", fontSize: "14px", listStyle: "none", padding: "0 4px" }}>
+            ⋯
+          </summary>
+          <div style={{
+            position: "absolute", right: 0, top: "100%",
+            background: "#111", border: "1px solid #333", borderRadius: "3px",
+            padding: "4px 0", zIndex: 10, minWidth: "140px",
+          }}>
+            <button data-copy-action={`cd "${projectPath}"`} data-copy-label="cd command"
+              style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", color: "#888", padding: "4px 12px", cursor: "pointer", fontSize: "11px", fontFamily: "inherit" }}>
+              Terminal
+            </button>
+            <button data-copy-action={`code "${projectPath}"`} data-copy-label="code command"
+              style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", color: "#888", padding: "4px 12px", cursor: "pointer", fontSize: "11px", fontFamily: "inherit" }}>
+              VS Code
+            </button>
+          </div>
+        </details>
+        <script dangerouslySetInnerHTML={{ __html: `
+(function() {
+  document.querySelectorAll('details[data-more-actions]').forEach(function(d) {
+    d.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); });
+    d.querySelector('summary').addEventListener('click', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      var det = e.currentTarget.parentElement;
+      det.open = !det.open;
+    });
+    d.querySelectorAll('[data-copy-action]').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var text = e.currentTarget.getAttribute('data-copy-action');
+        var label = e.currentTarget.getAttribute('data-copy-label');
+        if (window.__copyToClipboard) window.__copyToClipboard(text, label);
+        d.removeAttribute('open');
+      });
+    });
+  });
+})();
+`}} />
       </span>
     </Link>
   );
