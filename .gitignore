@@ -45,5 +45,5 @@ next-env.d.ts
 # Superpowers brainstorm artifacts
 .superpowers/
 
-# Design docs (internal planning)
-docs/superpowers/
+# Docs (internal planning)
+docs/
