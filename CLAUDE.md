@@ -20,6 +20,11 @@ npm test         # Run tests (vitest)
 
 ## Key patterns
 
+- **AVOID "use client" components** — React hydration is broken in this project (likely a Next.js 16 + Turbopack issue). Client components render but event handlers (onClick, onChange, useState) do NOT attach. Instead:
+  - Use native HTML: `<details>/<summary>` for expand/collapse, `<form>` with `action` for search/filter, `<Link>` for navigation
+  - Use URL search params for state (`?repo=...&branch=...`) — server filters, no JS needed
+  - Use `dangerouslySetInnerHTML` with `<script>` for tiny behaviors (e.g., auto-submit on select change)
+  - Only exceptions: `resize-handle.tsx` and `nav.tsx` (minimal client components)
 - **No `toLocaleTimeString`** — causes hydration mismatch (server UTC vs client local TZ). Use ISO string slicing instead.
 - **No Date objects across server/client boundary** — serialize to ISO strings, reconstruct on client if needed.
 - **Dates as strings in props** — all component props use `string` for dates, never `Date`.
@@ -33,7 +38,7 @@ npm test         # Run tests (vitest)
 
 ## Testing
 
-30 unit tests covering cache, path-utils, and JSONL parser. Run from project root:
+35 unit tests covering cache, path-utils, JSONL parser, file extraction, and tool stats. Run from project root:
 
 ```bash
 npm test
