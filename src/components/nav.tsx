@@ -7,7 +7,8 @@ export function Nav() {
   const pathname = usePathname();
   const isStats = pathname === "/stats";
   const isFiles = pathname === "/files";
-  const isSessions = !isStats && !isFiles;
+  const isTools = pathname === "/tools";
+  const isSessions = !isStats && !isFiles && !isTools;
 
   return (
     <nav
@@ -64,6 +65,17 @@ export function Nav() {
             }}
           >
             Files
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>]</span>
+        </Link>
+        <Link href="/tools">
+          <span style={{ color: "var(--text-muted)" }}>[</span>
+          <span
+            style={{
+              color: isTools ? "var(--green)" : "var(--text-secondary)",
+            }}
+          >
+            Tools
           </span>
           <span style={{ color: "var(--text-muted)" }}>]</span>
         </Link>

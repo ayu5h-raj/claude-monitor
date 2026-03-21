@@ -6,6 +6,7 @@ import {
   mapRawEntriesToSessionEntries,
   extractSessionMetadata,
   extractFilesChanged,
+  extractToolStats,
 } from "@/lib/jsonl-parser";
 
 const fixturePath = path.join(__dirname, "fixtures", "simple-session.jsonl");
@@ -129,5 +130,25 @@ describe("extractFilesChanged", () => {
     const raw = parseJSONLContent(fixtureContent); // only has Grep
     const files = extractFilesChanged(raw);
     expect(files).toHaveLength(0);
+  });
+});
+
+describe("extractToolStats", () => {
+  it("counts tool calls by name from fixture", () => {
+    const raw = parseJSONLContent(fixtureContent);
+    const stats = extractToolStats(raw);
+    expect(stats["Grep"]).toBeDefined();
+    expect(stats["Grep"].calls).toBe(1);
+    expect(stats["Grep"].errors).toBe(0);
+  });
+
+  it("counts errors from tool_result with is_error", () => {
+    const rawWithError = parseJSONLContent(
+      '{"type":"assistant","message":{"role":"assistant","model":"claude-opus-4-6","content":[{"type":"tool_use","id":"err-tool-1","name":"Bash","input":{"command":"bad-cmd"}}],"usage":{"input_tokens":10,"output_tokens":5}},"uuid":"e1","timestamp":"2026-03-20T10:00:00.000Z","cwd":"/x","sessionId":"s1","version":"2.1.81","gitBranch":"main"}' +
+      '\n{"type":"user","message":{"role":"user","content":[{"tool_use_id":"err-tool-1","type":"tool_result","content":"command not found","is_error":true}]},"uuid":"e2","timestamp":"2026-03-20T10:00:01.000Z","cwd":"/x","sessionId":"s1","version":"2.1.81","gitBranch":"main"}'
+    );
+    const stats = extractToolStats(rawWithError);
+    expect(stats["Bash"].calls).toBe(1);
+    expect(stats["Bash"].errors).toBe(1);
   });
 });

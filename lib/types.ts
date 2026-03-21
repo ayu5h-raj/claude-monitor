@@ -21,6 +21,7 @@ export interface Session {
   model: string;
   status: "active" | "completed";
   filesChanged: string[];
+  toolStats: Record<string, { calls: number; errors: number }>;
 }
 
 export interface SessionEntry {

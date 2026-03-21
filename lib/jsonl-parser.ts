@@ -121,6 +121,42 @@ export function mapRawEntriesToSessionEntries(
   return entries;
 }
 
+export function extractToolStats(
+  rawEntries: RawJSONLEntry[]
+): Record<string, { calls: number; errors: number }> {
+  const stats: Record<string, { calls: number; errors: number }> = {};
+
+  // Track tool names by their tool_use ID so we can attribute errors
+  const toolNameById = new Map<string, string>();
+
+  for (const raw of rawEntries) {
+    // Count tool calls from assistant messages
+    if (raw.type === "assistant" && raw.message && Array.isArray(raw.message.content)) {
+      for (const block of raw.message.content as RawContentBlock[]) {
+        if (block.type === "tool_use" && block.name) {
+          if (!stats[block.name]) stats[block.name] = { calls: 0, errors: 0 };
+          stats[block.name].calls++;
+          if (block.id) toolNameById.set(block.id, block.name);
+        }
+      }
+    }
+
+    // Count errors from tool results
+    if (raw.type === "user" && raw.message && Array.isArray(raw.message.content)) {
+      for (const block of raw.message.content as RawContentBlock[]) {
+        if (block.type === "tool_result" && block.is_error && block.tool_use_id) {
+          const toolName = toolNameById.get(block.tool_use_id);
+          if (toolName && stats[toolName]) {
+            stats[toolName].errors++;
+          }
+        }
+      }
+    }
+  }
+
+  return stats;
+}
+
 export function extractFilesChanged(rawEntries: RawJSONLEntry[]): string[] {
   const files = new Set<string>();
 
@@ -155,6 +191,7 @@ export function extractSessionMetadata(
   let messageCount = 0;
   let toolCallCount = 0;
   const filesChanged = extractFilesChanged(rawEntries);
+  const toolStats = extractToolStats(rawEntries);
 
   const timestamps: Date[] = [];
 
@@ -213,5 +250,6 @@ export function extractSessionMetadata(
     tokenUsage,
     model,
     filesChanged,
+    toolStats,
   };
 }

@@ -252,3 +252,57 @@ export async function getFileHistory(): Promise<FileHistoryEntry[]> {
 
   return entries;
 }
+
+export interface ToolAnalytics {
+  name: string;
+  totalCalls: number;
+  totalErrors: number;
+  errorRate: number;
+}
+
+export interface ToolError {
+  toolName: string;
+  sessionId: string;
+  project: string;
+  lastActiveAt: string;
+}
+
+export async function getToolAnalytics(): Promise<{
+  tools: ToolAnalytics[];
+  recentErrors: ToolError[];
+}> {
+  const sessions = await getAllSessions();
+  const aggregate: Record<string, { calls: number; errors: number }> = {};
+  const recentErrors: ToolError[] = [];
+
+  for (const session of sessions) {
+    for (const [toolName, stats] of Object.entries(session.toolStats)) {
+      if (!aggregate[toolName]) aggregate[toolName] = { calls: 0, errors: 0 };
+      aggregate[toolName].calls += stats.calls;
+      aggregate[toolName].errors += stats.errors;
+
+      if (stats.errors > 0) {
+        recentErrors.push({
+          toolName,
+          sessionId: session.id,
+          project: session.project,
+          lastActiveAt: session.lastActiveAt.toISOString(),
+        });
+      }
+    }
+  }
+
+  const tools: ToolAnalytics[] = Object.entries(aggregate)
+    .map(([name, stats]) => ({
+      name,
+      totalCalls: stats.calls,
+      totalErrors: stats.errors,
+      errorRate: stats.calls > 0 ? (stats.errors / stats.calls) * 100 : 0,
+    }))
+    .sort((a, b) => b.totalCalls - a.totalCalls);
+
+  // Sort errors by most recent
+  recentErrors.sort((a, b) => b.lastActiveAt.localeCompare(a.lastActiveAt));
+
+  return { tools, recentErrors: recentErrors.slice(0, 20) };
+}
