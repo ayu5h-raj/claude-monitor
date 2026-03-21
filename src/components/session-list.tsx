@@ -1,3 +1,4 @@
+import Script from "next/script";
 import Sidebar from "@/src/components/sidebar";
 import SessionRow from "@/src/components/session-row";
 
@@ -57,6 +58,45 @@ export default function SessionList({
         selectedBranch={selectedBranch}
         todayStats={todayStats}
       />
+
+      {/* Drag handle for sidebar resize */}
+      <div
+        id="sidebar-drag"
+        style={{
+          width: "5px",
+          cursor: "col-resize",
+          background: "var(--border)",
+          flexShrink: 0,
+        }}
+      />
+      <Script id="sidebar-resize" strategy="afterInteractive">{`
+(function() {
+  var handle = document.getElementById('sidebar-drag');
+  var sidebar = document.getElementById('sidebar');
+  if (!handle || !sidebar) return;
+  var dragging = false, startX = 0, startW = 0;
+  handle.addEventListener('mousedown', function(e) {
+    dragging = true; startX = e.clientX; startW = sidebar.offsetWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var w = Math.max(180, Math.min(startW + e.clientX - startX, window.innerWidth * 0.5));
+    sidebar.style.width = w + 'px';
+    sidebar.style.minWidth = w + 'px';
+  });
+  document.addEventListener('mouseup', function() {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+  handle.addEventListener('mouseenter', function() { handle.style.background = 'var(--green)'; });
+  handle.addEventListener('mouseleave', function() { if (!dragging) handle.style.background = 'var(--border)'; });
+})();
+      `}</Script>
 
       <div
         style={{
