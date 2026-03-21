@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Docs (internal planning)
 docs/
+!docs/superpowers/
+docs/superpowers/*
+!docs/superpowers/specs/
