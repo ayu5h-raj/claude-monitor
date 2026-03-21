@@ -121,6 +121,29 @@ export function mapRawEntriesToSessionEntries(
   return entries;
 }
 
+export function extractFilesChanged(rawEntries: RawJSONLEntry[]): string[] {
+  const files = new Set<string>();
+
+  for (const raw of rawEntries) {
+    if (raw.type !== "assistant" || !raw.message) continue;
+    const content = raw.message.content;
+    if (!Array.isArray(content)) continue;
+
+    for (const block of content as RawContentBlock[]) {
+      if (
+        block.type === "tool_use" &&
+        (block.name === "Edit" || block.name === "Write") &&
+        block.input &&
+        typeof block.input.file_path === "string"
+      ) {
+        files.add(block.input.file_path);
+      }
+    }
+  }
+
+  return Array.from(files);
+}
+
 export function extractSessionMetadata(
   rawEntries: RawJSONLEntry[],
   sessionId: string
@@ -131,6 +154,7 @@ export function extractSessionMetadata(
   const tokenUsage: TokenUsage = { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 };
   let messageCount = 0;
   let toolCallCount = 0;
+  const filesChanged = extractFilesChanged(rawEntries);
 
   const timestamps: Date[] = [];
 
@@ -188,5 +212,6 @@ export function extractSessionMetadata(
     toolCallCount,
     tokenUsage,
     model,
+    filesChanged,
   };
 }

@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 export function Nav() {
   const pathname = usePathname();
   const isStats = pathname === "/stats";
-  const isSessions = !isStats;
+  const isFiles = pathname === "/files";
+  const isSessions = !isStats && !isFiles;
 
   return (
     <nav
@@ -52,6 +53,17 @@ export function Nav() {
             }}
           >
             Stats
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>]</span>
+        </Link>
+        <Link href="/files">
+          <span style={{ color: "var(--text-muted)" }}>[</span>
+          <span
+            style={{
+              color: isFiles ? "var(--green)" : "var(--text-secondary)",
+            }}
+          >
+            Files
           </span>
           <span style={{ color: "var(--text-muted)" }}>]</span>
         </Link>

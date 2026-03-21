@@ -5,6 +5,7 @@ import {
   parseJSONLContent,
   mapRawEntriesToSessionEntries,
   extractSessionMetadata,
+  extractFilesChanged,
 } from "@/lib/jsonl-parser";
 
 const fixturePath = path.join(__dirname, "fixtures", "simple-session.jsonl");
@@ -98,5 +99,35 @@ describe("extractSessionMetadata", () => {
     const raw = parseJSONLContent(fixtureContent);
     const meta = extractSessionMetadata(raw, "sess-001");
     expect(meta.lastActiveAt).toEqual(new Date("2026-03-20T10:00:20.000Z"));
+  });
+});
+
+describe("extractFilesChanged", () => {
+  it("extracts file paths from Edit and Write tool_use entries", () => {
+    const rawWithFiles = parseJSONLContent(
+      fixtureContent +
+        '\n{"type":"assistant","message":{"role":"assistant","model":"claude-opus-4-6","content":[{"type":"tool_use","id":"tool-edit","name":"Edit","input":{"file_path":"/src/auth/login.ts","old_string":"foo","new_string":"bar"}}],"usage":{"input_tokens":100,"output_tokens":50}},"uuid":"aaa-010","timestamp":"2026-03-20T10:01:00.000Z","cwd":"/Users/dev/github/web-app","sessionId":"sess-001","version":"2.1.81","gitBranch":"main"}' +
+        '\n{"type":"assistant","message":{"role":"assistant","model":"claude-opus-4-6","content":[{"type":"tool_use","id":"tool-write","name":"Write","input":{"file_path":"/src/config.ts","content":"export default {}"}}],"usage":{"input_tokens":100,"output_tokens":50}},"uuid":"aaa-011","timestamp":"2026-03-20T10:01:05.000Z","cwd":"/Users/dev/github/web-app","sessionId":"sess-001","version":"2.1.81","gitBranch":"main"}'
+    );
+    const files = extractFilesChanged(rawWithFiles);
+    expect(files).toContain("/src/auth/login.ts");
+    expect(files).toContain("/src/config.ts");
+    expect(files).toHaveLength(2);
+  });
+
+  it("deduplicates file paths", () => {
+    const rawWithDupes = parseJSONLContent(
+      '{"type":"assistant","message":{"role":"assistant","model":"claude-opus-4-6","content":[{"type":"tool_use","id":"t1","name":"Edit","input":{"file_path":"/src/app.ts","old_string":"a","new_string":"b"}}],"usage":{"input_tokens":10,"output_tokens":5}},"uuid":"d1","timestamp":"2026-03-20T10:00:00.000Z","cwd":"/x","sessionId":"s1","version":"2.1.81","gitBranch":"main"}' +
+        '\n{"type":"assistant","message":{"role":"assistant","model":"claude-opus-4-6","content":[{"type":"tool_use","id":"t2","name":"Edit","input":{"file_path":"/src/app.ts","old_string":"b","new_string":"c"}}],"usage":{"input_tokens":10,"output_tokens":5}},"uuid":"d2","timestamp":"2026-03-20T10:00:05.000Z","cwd":"/x","sessionId":"s1","version":"2.1.81","gitBranch":"main"}'
+    );
+    const files = extractFilesChanged(rawWithDupes);
+    expect(files).toHaveLength(1);
+    expect(files[0]).toBe("/src/app.ts");
+  });
+
+  it("ignores non-Edit/Write tool calls", () => {
+    const raw = parseJSONLContent(fixtureContent); // only has Grep
+    const files = extractFilesChanged(raw);
+    expect(files).toHaveLength(0);
   });
 });

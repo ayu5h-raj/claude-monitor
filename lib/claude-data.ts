@@ -209,3 +209,46 @@ export async function getProjects(): Promise<Repository[]> {
   repos.sort((a, b) => b.lastActiveAt.getTime() - a.lastActiveAt.getTime());
   return repos;
 }
+
+export interface FileHistoryEntry {
+  filePath: string;
+  sessions: Array<{
+    sessionId: string;
+    project: string;
+    branch: string;
+    lastActiveAt: string;
+  }>;
+}
+
+export async function getFileHistory(): Promise<FileHistoryEntry[]> {
+  const sessions = await getAllSessions();
+  const fileMap = new Map<
+    string,
+    Array<{ sessionId: string; project: string; branch: string; lastActiveAt: string }>
+  >();
+
+  for (const session of sessions) {
+    for (const filePath of session.filesChanged) {
+      if (!fileMap.has(filePath)) fileMap.set(filePath, []);
+      fileMap.get(filePath)!.push({
+        sessionId: session.id,
+        project: session.project,
+        branch: session.branch,
+        lastActiveAt: session.lastActiveAt.toISOString(),
+      });
+    }
+  }
+
+  const entries: FileHistoryEntry[] = Array.from(fileMap.entries()).map(
+    ([filePath, sessions]) => ({ filePath, sessions })
+  );
+
+  // Sort by most recently modified
+  entries.sort((a, b) => {
+    const aLatest = a.sessions[0]?.lastActiveAt || "";
+    const bLatest = b.sessions[0]?.lastActiveAt || "";
+    return bLatest.localeCompare(aLatest);
+  });
+
+  return entries;
+}

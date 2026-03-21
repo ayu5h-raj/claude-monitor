@@ -15,6 +15,7 @@ interface SerializedSession {
   tokenUsage: { input: number; output: number; cacheRead: number; cacheCreation: number };
   model: string;
   status: "active" | "completed";
+  filesChanged: string[];
 }
 
 interface SerializedRepo {
@@ -102,7 +103,7 @@ export default function SessionList({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "20px 1fr 140px 80px 60px 80px",
+            gridTemplateColumns: "20px 1fr 140px 80px 60px 50px 80px",
             gap: "0 12px",
             padding: "6px 16px",
             borderBottom: "1px solid var(--border)",
@@ -121,6 +122,7 @@ export default function SessionList({
           <span>branch</span>
           <span style={{ textAlign: "right" }}>tokens</span>
           <span style={{ textAlign: "right" }}>tools</span>
+          <span style={{ textAlign: "right" }}>files</span>
           <span style={{ textAlign: "right" }}>when</span>
         </div>
 

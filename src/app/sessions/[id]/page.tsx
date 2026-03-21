@@ -144,6 +144,52 @@ export default async function SessionDetailPage({
         )}
       </div>
 
+      {/* Files changed */}
+      {session.filesChanged.length > 0 && (
+        <div
+          style={{
+            marginBottom: "24px",
+            padding: "12px",
+            background: "var(--bg-tertiary)",
+            border: "1px solid var(--border)",
+            borderRadius: "4px",
+          }}
+        >
+          <div
+            style={{
+              color: "var(--purple)",
+              fontSize: "11px",
+              fontWeight: "bold",
+              letterSpacing: "0.08em",
+              marginBottom: "8px",
+            }}
+          >
+            FILES CHANGED ({session.filesChanged.length})
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {session.filesChanged.map((filePath) => {
+              const fileName = filePath.split("/").pop() || filePath;
+              return (
+                <Link
+                  key={filePath}
+                  href={`/files?q=${encodeURIComponent(fileName)}`}
+                  style={{
+                    color: "var(--text-secondary)",
+                    fontSize: "12px",
+                    textDecoration: "none",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {filePath}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Conversation entries */}
       <div>
         {serializedEntries.map((entry, i) => (

@@ -20,6 +20,7 @@ export interface Session {
   tokenUsage: TokenUsage;
   model: string;
   status: "active" | "completed";
+  filesChanged: string[];
 }
 
 export interface SessionEntry {
