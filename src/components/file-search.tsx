@@ -6,21 +6,57 @@ import type { FileHistoryEntry } from "@/lib/claude-data";
 
 interface FileSearchProps {
   files: FileHistoryEntry[];
+  repoNames: string[];
   initialQuery?: string;
+  initialRepo?: string;
 }
 
-export default function FileSearch({ files, initialQuery = "" }: FileSearchProps) {
-  const [query, setQuery] = useState(initialQuery);
+function shortenPath(filePath: string): string {
+  // Strip /Users/username/... prefix, show from repo root
+  const parts = filePath.split("/");
+  // Find a common project directory marker
+  const markers = ["github", "Documents", "projects", "repos", "src"];
+  for (let i = 0; i < parts.length; i++) {
+    if (markers.includes(parts[i]) && i + 1 < parts.length) {
+      // Return from the directory after the marker
+      return parts.slice(i + 1).join("/");
+    }
+  }
+  // Fallback: strip first 3 segments (/Users/name/...)
+  if (parts.length > 4) {
+    return parts.slice(3).join("/");
+  }
+  return filePath;
+}
 
-  const filtered = query
-    ? files.filter((f) =>
-        f.filePath.toLowerCase().includes(query.toLowerCase())
-      )
-    : files;
+export default function FileSearch({
+  files,
+  repoNames,
+  initialQuery = "",
+  initialRepo = "",
+}: FileSearchProps) {
+  const [query, setQuery] = useState(initialQuery);
+  const [selectedRepo, setSelectedRepo] = useState(initialRepo);
+
+  let filtered = files;
+
+  // Filter by repo
+  if (selectedRepo) {
+    filtered = filtered.filter((f) =>
+      f.sessions.some((s) => s.project === selectedRepo)
+    );
+  }
+
+  // Filter by search query
+  if (query) {
+    filtered = filtered.filter((f) =>
+      f.filePath.toLowerCase().includes(query.toLowerCase())
+    );
+  }
 
   return (
     <div style={{ padding: "16px", maxWidth: "1000px", margin: "0 auto" }}>
-      {/* Search bar */}
+      {/* Search bar + repo filter */}
       <div style={{ marginBottom: "16px" }}>
         <div
           style={{
@@ -34,6 +70,33 @@ export default function FileSearch({ files, initialQuery = "" }: FileSearchProps
           }}
         >
           <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>$</span>
+
+          {/* Repo dropdown */}
+          <select
+            value={selectedRepo}
+            onChange={(e) => setSelectedRepo(e.target.value)}
+            style={{
+              background: "var(--bg-primary)",
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              color: selectedRepo ? "var(--green)" : "var(--text-muted)",
+              fontSize: "12px",
+              fontFamily: "inherit",
+              padding: "2px 4px",
+              cursor: "pointer",
+              outline: "none",
+              flexShrink: 0,
+            }}
+          >
+            <option value="">all repos</option>
+            {repoNames.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+
+          {/* Search input */}
           <input
             type="text"
             value={query}
@@ -50,9 +113,12 @@ export default function FileSearch({ files, initialQuery = "" }: FileSearchProps
             }}
             autoFocus
           />
-          {query && (
+          {(query || selectedRepo) && (
             <button
-              onClick={() => setQuery("")}
+              onClick={() => {
+                setQuery("");
+                setSelectedRepo("");
+              }}
               style={{
                 background: "transparent",
                 border: "none",
@@ -74,6 +140,11 @@ export default function FileSearch({ files, initialQuery = "" }: FileSearchProps
           }}
         >
           {filtered.length} file{filtered.length !== 1 ? "s" : ""} found
+          {selectedRepo && (
+            <span>
+              {" "}in <span style={{ color: "var(--green)" }}>{selectedRepo}</span>
+            </span>
+          )}
         </div>
       </div>
 
@@ -101,8 +172,9 @@ export default function FileSearch({ files, initialQuery = "" }: FileSearchProps
                   whiteSpace: "nowrap",
                   flex: 1,
                 }}
+                title={file.filePath}
               >
-                {file.filePath}
+                {shortenPath(file.filePath)}
               </span>
               <span
                 style={{
@@ -157,7 +229,9 @@ export default function FileSearch({ files, initialQuery = "" }: FileSearchProps
               color: "var(--text-muted)",
             }}
           >
-            {query ? "no files match your search" : "no files changed in any session"}
+            {query || selectedRepo
+              ? "no files match your search"
+              : "no files changed in any session"}
           </div>
         )}
       </div>

@@ -1,15 +1,24 @@
 export const dynamic = "force-dynamic";
 
-import { getFileHistory } from "@/lib/claude-data";
+import { getFileHistory, getProjects } from "@/lib/claude-data";
 import FileSearch from "@/src/components/file-search";
 
 export default async function FilesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; repo?: string }>;
 }) {
-  const { q } = await searchParams;
-  const files = await getFileHistory();
+  const { q, repo } = await searchParams;
+  const [files, projects] = await Promise.all([getFileHistory(), getProjects()]);
 
-  return <FileSearch files={files} initialQuery={q || ""} />;
+  const repoNames = projects.map((p) => p.name);
+
+  return (
+    <FileSearch
+      files={files}
+      repoNames={repoNames}
+      initialQuery={q || ""}
+      initialRepo={repo || ""}
+    />
+  );
 }
