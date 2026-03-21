@@ -138,3 +138,10 @@ export interface ActiveSession {
   cwd: string;
   startedAt: number;
 }
+
+export interface SessionMetadata {
+  bookmarked?: boolean;
+  tags?: string[];
+  notes?: string;
+  updatedAt: string; // ISO timestamp
+}
