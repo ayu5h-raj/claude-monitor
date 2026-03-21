@@ -1,4 +1,3 @@
-import Script from "next/script";
 import Sidebar from "@/src/components/sidebar";
 import SessionRow from "@/src/components/session-row";
 
@@ -69,7 +68,7 @@ export default function SessionList({
           flexShrink: 0,
         }}
       />
-      <Script id="sidebar-resize" strategy="afterInteractive">{`
+      <script dangerouslySetInnerHTML={{ __html: `
 (function() {
   var handle = document.getElementById('sidebar-drag');
   var sidebar = document.getElementById('sidebar');
@@ -96,7 +95,7 @@ export default function SessionList({
   handle.addEventListener('mouseenter', function() { handle.style.background = 'var(--green)'; });
   handle.addEventListener('mouseleave', function() { if (!dragging) handle.style.background = 'var(--border)'; });
 })();
-      `}</Script>
+      `}} />
 
       <div
         style={{
