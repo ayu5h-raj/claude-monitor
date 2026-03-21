@@ -27,7 +27,8 @@ export async function GET(
   let md = `# Session ${shortId}\n\n`;
   md += `**Project:** ${session.project}\n`;
   md += `**Branch:** ${session.branch}\n`;
-  md += `**Started:** ${session.startedAt.toISOString()}\n`;
+  const startedIso = typeof session.startedAt === "string" ? session.startedAt : session.startedAt.toISOString();
+  md += `**Started:** ${startedIso}\n`;
   md += `**Duration:** ${duration}\n`;
   md += `**Model:** ${session.model}\n`;
   md += `**Tokens:** ${formatTokenCount(totalTokens)} (input: ${formatTokenCount(session.tokenUsage.input)}, output: ${formatTokenCount(session.tokenUsage.output)})\n`;
@@ -47,7 +48,7 @@ export async function GET(
   md += `\n---\n\n## Conversation\n\n`;
 
   for (const entry of entries) {
-    const time = entry.timestamp.toISOString().slice(11, 19);
+    const time = (typeof entry.timestamp === "string" ? entry.timestamp : entry.timestamp.toISOString()).slice(11, 19);
 
     if (entry.type === "user") {
       md += `### User — ${time}\n\n${entry.content}\n\n`;

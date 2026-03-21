@@ -176,6 +176,8 @@ export default function SessionRow({
         <script dangerouslySetInnerHTML={{ __html: `
 (function() {
   document.querySelectorAll('details[data-more-actions]').forEach(function(d) {
+    if (d.__moreActionsInit) return;
+    d.__moreActionsInit = true;
     d.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); });
     d.querySelector('summary').addEventListener('click', function(e) {
       e.stopPropagation();
