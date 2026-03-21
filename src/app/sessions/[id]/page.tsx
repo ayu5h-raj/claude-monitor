@@ -1,20 +1,31 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSessionDetail } from "@/lib/claude-data";
+import { getSessionMetadata } from "@/lib/session-metadata";
 import ConversationEntry from "@/src/components/conversation-entry";
+import { BookmarkButton } from "@/src/components/bookmark-button";
+import { TagPills } from "@/src/components/tag-pills";
+import { SessionNotes } from "@/src/components/session-notes";
+import { QuickActions } from "@/src/components/quick-actions";
+import { addTagAction } from "@/src/app/actions/metadata";
 import { formatTokenCount, formatDuration } from "@/lib/path-utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function SessionDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
+  const { error } = await searchParams;
   const result = await getSessionDetail(id);
   if (!result) notFound();
   const { session, entries } = result;
+  const metadata = await getSessionMetadata(session.id);
+  const returnUrl = `/sessions/${session.id}`;
 
   const totalTokens =
     session.tokenUsage.input +
@@ -24,6 +35,7 @@ export default async function SessionDetailPage({
 
   const durationMs =
     session.lastActiveAt.getTime() - session.startedAt.getTime();
+  const durationStr = formatDuration(durationMs);
 
   const startedIso = session.startedAt.toISOString();
   const startedDate = startedIso.slice(0, 10); // "YYYY-MM-DD"
@@ -65,6 +77,11 @@ export default async function SessionDetailPage({
             flexWrap: "wrap",
           }}
         >
+          <BookmarkButton
+            sessionId={session.id}
+            bookmarked={metadata?.bookmarked || false}
+            returnUrl={returnUrl}
+          />
           <h1
             style={{
               margin: "0",
@@ -127,6 +144,63 @@ export default async function SessionDetailPage({
         `}} />
       </div>
 
+      {/* Tags */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
+        <TagPills tags={metadata?.tags || []} sessionId={session.id} returnUrl={returnUrl} />
+        <form action={addTagAction} style={{ display: "inline-flex", gap: "4px" }}>
+          <input type="hidden" name="sessionId" value={session.id} />
+          <input type="hidden" name="returnUrl" value={returnUrl} />
+          <input
+            type="text"
+            name="tag"
+            placeholder="Add tag..."
+            style={{
+              background: "#111",
+              color: "#ccc",
+              border: "1px solid #333",
+              borderRadius: "3px",
+              padding: "2px 8px",
+              fontSize: "11px",
+              fontFamily: "inherit",
+              width: "120px",
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              background: "#111",
+              color: "#555",
+              border: "1px solid #333",
+              borderRadius: "3px",
+              padding: "2px 8px",
+              fontSize: "11px",
+              fontFamily: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            +
+          </button>
+        </form>
+      </div>
+
+      {error === "invalid-tag" && (
+        <div style={{ color: "#ff4444", fontSize: "11px", marginBottom: "8px" }}>
+          Invalid tag. Use lowercase letters, numbers, and hyphens (max 30 chars, max 10 tags).
+        </div>
+      )}
+
+      {/* Quick Actions */}
+      <QuickActions
+        sessionId={session.id}
+        projectPath={session.projectPath}
+        project={session.project}
+        branch={session.branch}
+        duration={durationStr}
+        filesChanged={session.filesChanged.length}
+        tokenCount={formatTokenCount(totalTokens)}
+        firstMessage={session.firstMessage}
+      />
+
       {/* Metadata row */}
       <div
         style={{
@@ -172,6 +246,13 @@ export default async function SessionDetailPage({
           </span>
         </div>
       </div>
+
+      {/* Session Notes */}
+      <SessionNotes
+        sessionId={session.id}
+        notes={metadata?.notes || ""}
+        returnUrl={returnUrl}
+      />
 
       {/* Files changed */}
       {session.filesChanged.length > 0 && (
