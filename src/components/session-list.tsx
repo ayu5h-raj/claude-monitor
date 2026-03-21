@@ -1,6 +1,5 @@
 import Sidebar from "@/src/components/sidebar";
 import SessionRow from "@/src/components/session-row";
-import ResizeHandle from "@/src/components/resize-handle";
 
 interface SerializedSession {
   id: string;
@@ -58,7 +57,6 @@ export default function SessionList({
         selectedBranch={selectedBranch}
         todayStats={todayStats}
       />
-      <ResizeHandle targetId="sidebar" />
 
       <div
         style={{

@@ -27,16 +27,19 @@ export default function Sidebar({
   return (
     <aside
       id="sidebar"
+      className="sidebar-resize"
       style={{
         width: "260px",
         minWidth: "180px",
         maxWidth: "50vw",
         background: "var(--bg-secondary)",
+        borderRight: "1px solid var(--border)",
         display: "flex",
         flexDirection: "column",
         height: "100%",
         overflow: "auto",
         flexShrink: 0,
+        resize: "horizontal",
       }}
     >
       {/* Header */}

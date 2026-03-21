@@ -58,3 +58,14 @@ a {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* Sidebar resize handle */
+.sidebar-resize::-webkit-resizer {
+  background: var(--border);
+  border: 2px solid var(--bg-secondary);
+  border-radius: 2px;
+}
+
+.sidebar-resize:hover::-webkit-resizer {
+  background: var(--green);
+}
