@@ -12,7 +12,9 @@ interface SessionRowProps {
     toolCallCount: number;
     tokenUsage: { input: number; output: number; cacheRead: number; cacheCreation: number };
     filesChanged: string[];
+    firstMessage?: string;
   };
+  showSummary?: boolean;
 }
 
 function getRelativeTime(isoStr: string): string {
@@ -30,7 +32,7 @@ function getRelativeTime(isoStr: string): string {
   return `${seconds}s ago`;
 }
 
-export default function SessionRow({ session }: SessionRowProps) {
+export default function SessionRow({ session, showSummary }: SessionRowProps) {
   const totalTokens =
     session.tokenUsage.input +
     session.tokenUsage.output +
@@ -69,13 +71,15 @@ export default function SessionRow({ session }: SessionRowProps) {
       />
       <span
         style={{
-          color: "var(--text-primary)",
+          color: showSummary && session.firstMessage ? "var(--text-secondary)" : "var(--text-primary)",
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
+          fontSize: showSummary ? "12px" : undefined,
         }}
+        title={showSummary ? session.firstMessage : session.project}
       >
-        {session.project}
+        {showSummary ? (session.firstMessage || session.project) : session.project}
       </span>
       <span
         style={{

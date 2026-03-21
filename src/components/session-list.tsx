@@ -15,6 +15,7 @@ interface SerializedSession {
   model: string;
   status: "active" | "completed";
   filesChanged: string[];
+  firstMessage?: string;
 }
 
 interface SerializedRepo {
@@ -210,7 +211,7 @@ export default function SessionList({
           }}
         >
           <span />
-          <span>project</span>
+          <span>{selectedRepo ? "session" : "project"}</span>
           <span>branch</span>
           <span style={{ textAlign: "right" }}>tokens</span>
           <span style={{ textAlign: "right" }}>tools</span>
@@ -222,7 +223,7 @@ export default function SessionList({
         {/* Session rows */}
         {sessions.length > 0 ? (
           sessions.map((session) => (
-            <SessionRow key={session.id} session={session} />
+            <SessionRow key={session.id} session={session} showSummary={!!selectedRepo} />
           ))
         ) : (
           <div

@@ -192,6 +192,14 @@ export function extractSessionMetadata(
   let toolCallCount = 0;
   const filesChanged = extractFilesChanged(rawEntries);
   const toolStats = extractToolStats(rawEntries);
+  let firstMessage: string | undefined;
+  const firstUserEntry = rawEntries.find(
+    (e) => e.type === "user" && e.message && typeof e.message.content === "string"
+  );
+  if (firstUserEntry?.message && typeof firstUserEntry.message.content === "string") {
+    const msg = firstUserEntry.message.content.trim();
+    firstMessage = msg.length > 120 ? msg.slice(0, 120) + "…" : msg;
+  }
 
   const timestamps: Date[] = [];
 
@@ -251,5 +259,6 @@ export function extractSessionMetadata(
     model,
     filesChanged,
     toolStats,
+    firstMessage,
   };
 }

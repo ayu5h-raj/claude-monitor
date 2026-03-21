@@ -22,6 +22,7 @@ export interface Session {
   status: "active" | "completed";
   filesChanged: string[];
   toolStats: Record<string, { calls: number; errors: number }>;
+  firstMessage?: string;
 }
 
 export interface SessionEntry {
