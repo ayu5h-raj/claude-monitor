@@ -5,6 +5,7 @@ interface SessionRowProps {
   session: {
     id: string;
     project: string;
+    projectPath: string;
     branch: string;
     status: "active" | "completed";
     lastActiveAt: string;
@@ -41,7 +42,7 @@ export default function SessionRow({ session }: SessionRowProps) {
       href={`/sessions/${session.id}`}
       style={{
         display: "grid",
-        gridTemplateColumns: "20px 1fr 140px 80px 60px 50px 80px",
+        gridTemplateColumns: "20px 1fr 140px 80px 60px 50px 80px 28px",
         alignItems: "center",
         gap: "0 12px",
         padding: "8px 16px",
@@ -98,6 +99,20 @@ export default function SessionRow({ session }: SessionRowProps) {
       </span>
       <span style={{ color: "var(--text-muted)", textAlign: "right", fontSize: "12px" }}>
         {getRelativeTime(session.lastActiveAt)}
+      </span>
+      <span
+        data-copy-resume=""
+        data-cmd={`cd "${session.projectPath}" && claude --resume ${session.id}`}
+        title="Copy resume command"
+        style={{
+          color: "var(--text-muted)",
+          fontSize: "12px",
+          textAlign: "center",
+          cursor: "pointer",
+          lineHeight: 1,
+        }}
+      >
+        &#9654;
       </span>
     </Link>
   );

@@ -101,7 +101,71 @@ export default async function SessionDetailPage({
           >
             {session.id.slice(0, 8)}
           </span>
+          <span
+            id="resume-copy-btn"
+            data-cmd={`cd "${session.projectPath}" && claude --resume ${session.id}`}
+            style={{
+              color: "var(--text-muted)",
+              fontSize: "11px",
+              cursor: "pointer",
+              padding: "2px 6px",
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              marginLeft: "4px",
+            }}
+          >
+            [ copy resume cmd ]
+          </span>
         </div>
+        <script dangerouslySetInnerHTML={{ __html: `
+(function() {
+  if (!window.__showCopyToast) {
+    window.__showCopyToast = function(cmd) {
+      var existing = document.getElementById('copy-toast');
+      if (existing) existing.remove();
+      var toast = document.createElement('div');
+      toast.id = 'copy-toast';
+      toast.style.cssText = 'position:fixed;top:12px;right:12px;z-index:9999;background:#0a0a0a;border:1px solid #00ff41;border-radius:4px;padding:10px 14px;font-family:monospace;font-size:12px;max-width:420px;box-shadow:0 4px 12px rgba(0,255,65,0.15);opacity:0;transform:translateY(-8px);transition:opacity 0.2s,transform 0.2s;';
+      var line1 = document.createElement('div');
+      line1.style.cssText = 'color:#00ff41;margin-bottom:4px;font-size:11px;';
+      line1.textContent = '$ copied to clipboard';
+      var line2 = document.createElement('div');
+      line2.style.cssText = 'color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      line2.textContent = cmd;
+      toast.appendChild(line1);
+      toast.appendChild(line2);
+      document.body.appendChild(toast);
+      requestAnimationFrame(function() { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; });
+      setTimeout(function() {
+        toast.style.opacity = '0'; toast.style.transform = 'translateY(-8px)';
+        setTimeout(function() { toast.remove(); }, 200);
+      }, 2000);
+    };
+  }
+  var btn = document.getElementById('resume-copy-btn');
+  if (!btn) return;
+  btn.addEventListener('mouseenter', function() { btn.style.borderColor = 'var(--green)'; btn.style.color = 'var(--green)'; });
+  btn.addEventListener('mouseleave', function() { btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text-muted)'; });
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    var cmd = btn.getAttribute('data-cmd');
+    function onSuccess() {
+      btn.textContent = '[ copied! ]';
+      btn.style.color = 'var(--green)';
+      if (window.__showCopyToast) window.__showCopyToast(cmd);
+      setTimeout(function() { btn.textContent = '[ copy resume cmd ]'; btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; }, 1500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cmd).then(onSuccess);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = cmd; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      onSuccess();
+    }
+  });
+})();
+        `}} />
       </div>
 
       {/* Metadata row */}
@@ -142,6 +206,12 @@ export default async function SessionDetailPage({
             <span style={{ color: "#00aaff" }}>{session.model}</span>
           </div>
         )}
+        <div style={{ width: "100%" }}>
+          <span style={{ color: "var(--text-muted)" }}>cwd </span>
+          <span style={{ color: "var(--text-secondary)", fontSize: "11px" }}>
+            {session.projectPath}
+          </span>
+        </div>
       </div>
 
       {/* Files changed */}
