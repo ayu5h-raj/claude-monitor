@@ -21,20 +21,22 @@ export default async function FilesPage({
   searchParams: Promise<{ q?: string; repo?: string }>;
 }) {
   const { q, repo } = await searchParams;
-  const [files, projects] = await Promise.all([getFileHistory(), getProjects()]);
+
+  // Only load file history when a repo is selected (avoids loading all sessions upfront)
+  const projects = await getProjects();
   const repoNames = projects.map((p) => p.name);
 
-  // Server-side filtering
-  let filtered = files;
+  let filtered: Awaited<ReturnType<typeof getFileHistory>> = [];
   if (repo) {
-    filtered = filtered.filter((f) =>
+    const files = await getFileHistory();
+    filtered = files.filter((f) =>
       f.sessions.some((s) => s.project === repo)
     );
-  }
-  if (q) {
-    filtered = filtered.filter((f) =>
-      f.filePath.toLowerCase().includes(q.toLowerCase())
-    );
+    if (q) {
+      filtered = filtered.filter((f) =>
+        f.filePath.toLowerCase().includes(q.toLowerCase())
+      );
+    }
   }
 
   return (
@@ -76,7 +78,7 @@ export default async function FilesPage({
               flexShrink: 0,
             }}
           >
-            <option value="">all repos</option>
+            <option value="">select repo...</option>
             {repoNames.map((name) => (
               <option key={name} value={name}>
                 {name}
@@ -120,11 +122,13 @@ export default async function FilesPage({
             marginTop: "6px",
           }}
         >
-          {filtered.length} file{filtered.length !== 1 ? "s" : ""} found
-          {repo && (
-            <span>
+          {repo ? (
+            <>
+              {filtered.length} file{filtered.length !== 1 ? "s" : ""} found
               {" "}in <span style={{ color: "var(--green)" }}>{repo}</span>
-            </span>
+            </>
+          ) : (
+            <>{repoNames.length} repos available</>
           )}
         </div>
       </form>
@@ -208,7 +212,7 @@ export default async function FilesPage({
           </details>
         ))}
 
-        {filtered.length === 0 && (
+        {!repo && (
           <div
             style={{
               textAlign: "center",
@@ -216,7 +220,18 @@ export default async function FilesPage({
               color: "var(--text-muted)",
             }}
           >
-            {q || repo
+            select a repo to view changed files
+          </div>
+        )}
+        {repo && filtered.length === 0 && (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "40px",
+              color: "var(--text-muted)",
+            }}
+          >
+            {q
               ? "no files match your search"
               : "no files changed in any session"}
           </div>

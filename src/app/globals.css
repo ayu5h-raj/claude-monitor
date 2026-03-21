@@ -58,3 +58,46 @@ a {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* Heatmap cell tooltip (CSS-only, no JS) */
+.heatmap-cell {
+  position: relative;
+}
+
+.heatmap-cell:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.heatmap-cell:hover::before {
+  content: "";
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 2px;
+  border: 4px solid transparent;
+  border-bottom-color: var(--border);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Left-half cells: tooltip extends rightward */
+.heatmap-cell-left:hover::after {
+  right: auto;
+  left: 0;
+}
+
+.heatmap-cell-left:hover::before {
+  right: auto;
+  left: 2px;
+}

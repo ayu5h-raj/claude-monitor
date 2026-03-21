@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { getStats, getAllSessions } from "@/lib/claude-data";
 import { formatTokenCount, formatDuration } from "@/lib/path-utils";
 import StatCard from "@/components/stat-card";
-import ActivityChart from "@/components/activity-chart";
+import ContributionHeatmap from "@/components/contribution-heatmap";
 import ModelBreakdown from "@/components/model-breakdown";
 
 export default async function StatsPage() {
@@ -114,17 +114,13 @@ export default async function StatsPage() {
         />
       </div>
 
-      {/* 2-column grid: activity chart + model breakdown */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "12px",
-        }}
-      >
-        <ActivityChart data={stats.dailyActivity} days={14} />
-        <ModelBreakdown modelUsage={stats.modelUsage} />
+      {/* Full-width contribution heatmap */}
+      <div style={{ marginBottom: "12px" }}>
+        <ContributionHeatmap dailyActivity={stats.dailyActivity} />
       </div>
+
+      {/* Full-width model breakdown */}
+      <ModelBreakdown modelUsage={stats.modelUsage} />
     </div>
   );
 }
