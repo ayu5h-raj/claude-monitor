@@ -64,13 +64,17 @@ describe("formatTokenCount", () => {
 });
 
 describe("getModelContextLimit", () => {
-  it("returns 200K for known models", () => {
-    expect(getModelContextLimit("claude-sonnet-4-6")).toBe(200_000);
-    expect(getModelContextLimit("claude-opus-4-6")).toBe(200_000);
+  it("returns 1M for Opus", () => {
+    expect(getModelContextLimit("claude-opus-4-6")).toBe(1_000_000);
   });
 
-  it("returns 1M for models with [1m] suffix", () => {
-    expect(getModelContextLimit("claude-opus-4-6[1m]")).toBe(1_000_000);
+  it("returns 200K for Sonnet and Haiku", () => {
+    expect(getModelContextLimit("claude-sonnet-4-6")).toBe(200_000);
+    expect(getModelContextLimit("claude-haiku-4-5")).toBe(200_000);
+  });
+
+  it("matches model prefix for versioned variants", () => {
+    expect(getModelContextLimit("claude-haiku-4-5-20251001")).toBe(200_000);
   });
 
   it("returns 200K default for unknown models", () => {
