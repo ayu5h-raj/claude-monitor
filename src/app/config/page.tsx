@@ -145,11 +145,11 @@ export default async function ConfigPage() {
          ══════════════════════════════════════════════════════════════ */}
       <div style={sectionHeaderStyle}>Global Configuration</div>
 
-      {/* ── Plugins Section (kept as-is) ── */}
-      <div style={panelStyle}>
-        <div style={panelHeaderStyle("var(--green)")}>
+      {/* ── Plugins Section ── */}
+      <details open style={panelStyle}>
+        <summary style={{ ...panelHeaderStyle("var(--green)"), cursor: "pointer" }}>
           Plugins ({pluginCount})
-        </div>
+        </summary>
 
         {config.plugins.length === 0 && (
           <div style={emptyStyle}>no plugins installed</div>
@@ -254,13 +254,13 @@ export default async function ConfigPage() {
             </details>
           );
         })}
-      </div>
+      </details>
 
       {/* ── Global Skills Section ── */}
-      <div style={panelStyle}>
-        <div style={panelHeaderStyle("var(--blue)")}>
+      <details open style={panelStyle}>
+        <summary style={{ ...panelHeaderStyle("var(--blue)"), cursor: "pointer" }}>
           Global Skills ({globalSkillCount})
-        </div>
+        </summary>
 
         {config.skills.length === 0 && (
           <div style={emptyStyle}>no global skills configured</div>
@@ -317,13 +317,13 @@ export default async function ConfigPage() {
             </div>
           </details>
         ))}
-      </div>
+      </details>
 
       {/* ── Global Commands Section ── */}
-      <div style={panelStyle}>
-        <div style={panelHeaderStyle("var(--purple)")}>
+      <details open style={panelStyle}>
+        <summary style={{ ...panelHeaderStyle("var(--purple)"), cursor: "pointer" }}>
           Global Commands ({globalCommandCount})
-        </div>
+        </summary>
 
         {globalCommands.length === 0 && (
           <div style={emptyStyle}>no global commands found</div>
@@ -343,13 +343,13 @@ export default async function ConfigPage() {
             </div>
           </details>
         ))}
-      </div>
+      </details>
 
-      {/* ── MCP Servers Section (kept as-is) ── */}
-      <div style={panelStyle}>
-        <div style={panelHeaderStyle("var(--amber)")}>
+      {/* ── MCP Servers Section ── */}
+      <details open style={panelStyle}>
+        <summary style={{ ...panelHeaderStyle("var(--amber)"), cursor: "pointer" }}>
           MCP Servers ({mcpServerCount})
-        </div>
+        </summary>
 
         {config.mcpServers.length === 0 && (
           <div style={emptyStyle}>no MCP servers configured</div>
@@ -394,7 +394,7 @@ export default async function ConfigPage() {
             </div>
           </details>
         ))}
-      </div>
+      </details>
 
       {/* ══════════════════════════════════════════════════════════════
           PER-REPO CONFIGURATION
