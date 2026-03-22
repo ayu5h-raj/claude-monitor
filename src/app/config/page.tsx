@@ -146,7 +146,7 @@ export default async function ConfigPage() {
       <div style={sectionHeaderStyle}>Global Configuration</div>
 
       {/* ── Plugins Section ── */}
-      <details open style={panelStyle}>
+      <details style={panelStyle}>
         <summary style={{ ...panelHeaderStyle("var(--green)"), cursor: "pointer" }}>
           Plugins ({pluginCount})
         </summary>
@@ -257,7 +257,7 @@ export default async function ConfigPage() {
       </details>
 
       {/* ── Global Skills Section ── */}
-      <details open style={panelStyle}>
+      <details style={panelStyle}>
         <summary style={{ ...panelHeaderStyle("var(--blue)"), cursor: "pointer" }}>
           Global Skills ({globalSkillCount})
         </summary>
@@ -320,7 +320,7 @@ export default async function ConfigPage() {
       </details>
 
       {/* ── Global Commands Section ── */}
-      <details open style={panelStyle}>
+      <details style={panelStyle}>
         <summary style={{ ...panelHeaderStyle("var(--purple)"), cursor: "pointer" }}>
           Global Commands ({globalCommandCount})
         </summary>
@@ -346,7 +346,7 @@ export default async function ConfigPage() {
       </details>
 
       {/* ── MCP Servers Section ── */}
-      <details open style={panelStyle}>
+      <details style={panelStyle}>
         <summary style={{ ...panelHeaderStyle("var(--amber)"), cursor: "pointer" }}>
           MCP Servers ({mcpServerCount})
         </summary>
