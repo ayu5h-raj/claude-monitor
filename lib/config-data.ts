@@ -30,7 +30,7 @@ async function getLatestVersion(pluginDir: string): Promise<string | null> {
   try {
     const entries = await fs.readdir(pluginDir);
     if (entries.length === 0) return null;
-    entries.sort();
+    entries.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     return entries[entries.length - 1];
   } catch {
     return null;
@@ -398,8 +398,10 @@ export async function getGlobalConfig(): Promise<GlobalConfig> {
 export async function getProjectConfig(
   cwd: string
 ): Promise<{ mcpServers: McpServerInfo[]; hasClaudeMd: boolean }> {
+  if (!path.isAbsolute(cwd)) {
+    return { mcpServers: [], hasClaudeMd: false };
+  }
   return projectConfigCache.getOrSet(cwd, async () => {
-    const empty = { mcpServers: [] as McpServerInfo[], hasClaudeMd: false };
     try {
       // Check for CLAUDE.md in project root
       let hasClaudeMd = false;
@@ -436,7 +438,7 @@ export async function getProjectConfig(
 
       return { mcpServers, hasClaudeMd };
     } catch {
-      return empty;
+      return { mcpServers: [], hasClaudeMd: false };
     }
   });
 }
