@@ -3,8 +3,16 @@ import { Nav } from "@/src/components/nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "claude-monitor",
+  title: "Claude Monitor",
   description: "Terminal-themed monitoring dashboard for Claude Code sessions",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Claude Monitor",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
@@ -14,6 +22,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <meta name="theme-color" content="#0a0a0a" />
+        <link rel="icon" href="/icon-192.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon-192.svg" />
+      </head>
       <body>
         <script dangerouslySetInnerHTML={{ __html: `
 (function() {
@@ -81,6 +94,10 @@ export default function RootLayout({
     e.stopPropagation();
     window.__copyCmd(btn.getAttribute('data-cmd'), btn, 'icon');
   });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
 })();
         `}} />
         <Nav />
