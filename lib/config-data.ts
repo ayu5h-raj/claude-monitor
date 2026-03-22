@@ -231,13 +231,16 @@ async function readGlobalSkills(): Promise<SkillInfo[]> {
       if (!stat.isDirectory()) continue;
 
       let content: string | null = null;
-      try {
-        content = await fs.readFile(
-          path.join(entryPath, "SKILL.md"),
-          "utf-8"
-        );
-      } catch {
-        // No SKILL.md
+      for (const filename of ["SKILL.md", "CLAUDE.md"]) {
+        try {
+          content = await fs.readFile(
+            path.join(entryPath, filename),
+            "utf-8"
+          );
+          break;
+        } catch {
+          // Try next filename
+        }
       }
 
       if (!content) continue;
@@ -398,18 +401,13 @@ export async function getProjectConfig(
   return projectConfigCache.getOrSet(cwd, async () => {
     const empty = { mcpServers: [] as McpServerInfo[], hasClaudeMd: false };
     try {
-      // Check for .claude/CLAUDE.md or CLAUDE.md in project root
+      // Check for CLAUDE.md in project root
       let hasClaudeMd = false;
       try {
         await fs.access(path.join(cwd, "CLAUDE.md"));
         hasClaudeMd = true;
       } catch {
-        try {
-          await fs.access(path.join(cwd, ".claude", "CLAUDE.md"));
-          hasClaudeMd = true;
-        } catch {
-          // No CLAUDE.md
-        }
+        // No CLAUDE.md
       }
 
       // Read project-level MCP config
