@@ -12,6 +12,7 @@ import { formatTokenCount, formatDuration } from "@/lib/path-utils";
 import { getGlobalConfig, getProjectConfig } from "@/lib/config-data";
 import CodeImpactView from "@/src/components/code-impact-view";
 import LiveSession from "@/src/components/live-session";
+import Terminal from "@/src/components/terminal";
 
 export const dynamic = "force-dynamic";
 
@@ -275,6 +276,32 @@ export default async function SessionDetailPage({
         notes={metadata?.notes || ""}
         returnUrl={returnUrl}
       />
+
+      {/* Embedded Terminal */}
+      <details
+        style={{
+          marginBottom: "24px",
+          background: "var(--bg-tertiary)",
+          border: "1px solid var(--border)",
+          borderRadius: "4px",
+        }}
+      >
+        <summary
+          style={{
+            padding: "12px",
+            cursor: "pointer",
+            color: "var(--green)",
+            fontSize: "11px",
+            fontWeight: "bold",
+            letterSpacing: "0.08em",
+          }}
+        >
+          TERMINAL — resume this session
+        </summary>
+        <div style={{ padding: "0 12px 12px" }}>
+          <Terminal sessionId={session.id} cwd={session.projectPath} />
+        </div>
+      </details>
 
       {/* Files changed */}
       {session.filesChanged.length > 0 && (
