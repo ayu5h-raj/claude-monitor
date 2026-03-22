@@ -457,7 +457,7 @@ export default async function ConfigPage() {
               }}
             >
               {/* CLAUDE.md */}
-              {repo.claudeMdContent && (
+              {repo.claudeMdContent ? (
                 <details
                   style={{
                     borderBottom: "1px solid var(--border-light)",
@@ -467,8 +467,11 @@ export default async function ConfigPage() {
                   <summary
                     style={{
                       ...summaryStyle,
-                      padding: "6px 0",
-                      color: "var(--text-primary)",
+                      padding: "8px 0",
+                      color: "var(--green)",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      fontWeight: "bold",
                     }}
                   >
                     CLAUDE.md
@@ -477,6 +480,33 @@ export default async function ConfigPage() {
                     <pre style={preStyle}>{repo.claudeMdContent}</pre>
                   </div>
                 </details>
+              ) : (
+                <div
+                  style={{
+                    borderBottom: "1px solid var(--border-light)",
+                    marginBottom: "4px",
+                    padding: "8px 0",
+                    fontSize: "12px",
+                    color: "var(--text-muted)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span style={{ color: "#cc8800" }}>!</span>
+                  <span>CLAUDE.md</span>
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      padding: "1px 6px",
+                      borderRadius: "3px",
+                      background: "rgba(204, 136, 0, 0.15)",
+                      color: "#cc8800",
+                    }}
+                  >
+                    missing
+                  </span>
+                </div>
               )}
 
               {/* AGENTS.md */}
@@ -490,8 +520,11 @@ export default async function ConfigPage() {
                   <summary
                     style={{
                       ...summaryStyle,
-                      padding: "6px 0",
-                      color: "var(--text-primary)",
+                      padding: "8px 0",
+                      color: "var(--green)",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      fontWeight: "bold",
                     }}
                   >
                     AGENTS.md
