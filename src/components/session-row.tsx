@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatTokenCount, getModelContextLimit } from "@/lib/path-utils";
+import { formatTokenCount } from "@/lib/path-utils";
 import { BookmarkButton } from "@/src/components/bookmark-button";
 import { TagPills } from "@/src/components/tag-pills";
 
@@ -15,7 +15,6 @@ interface SessionRowProps {
     tokenUsage: { input: number; output: number; cacheRead: number; cacheCreation: number };
     filesChanged: string[];
     contextSize: number;
-    model: string;
     firstMessage?: string;
   };
   showSummary?: boolean;
@@ -123,10 +122,7 @@ export default function SessionRow({
       <span style={{ color: "var(--amber)", textAlign: "right", fontSize: "12px" }}>
         {formatTokenCount(totalTokens)}
       </span>
-      <span
-        style={{ color: "var(--green)", textAlign: "right", fontSize: "12px" }}
-        title={session.contextSize > 0 ? `${formatTokenCount(session.contextSize)} / ${formatTokenCount(getModelContextLimit(session.model))}` : ""}
-      >
+      <span style={{ color: "var(--green)", textAlign: "right", fontSize: "12px" }}>
         {session.contextSize > 0 ? formatTokenCount(session.contextSize) : "—"}
       </span>
       <span style={{ color: "var(--blue)", textAlign: "right", fontSize: "12px" }}>

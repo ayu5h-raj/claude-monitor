@@ -8,7 +8,7 @@ import { TagPills } from "@/src/components/tag-pills";
 import { SessionNotes } from "@/src/components/session-notes";
 import { QuickActions } from "@/src/components/quick-actions";
 import { addTagAction } from "@/src/app/actions/metadata";
-import { formatTokenCount, formatDuration, getModelContextLimit } from "@/lib/path-utils";
+import { formatTokenCount, formatDuration } from "@/lib/path-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -239,36 +239,12 @@ export default async function SessionDetailPage({
             <span style={{ color: "#00aaff" }}>{session.model}</span>
           </div>
         )}
-        {session.contextSize > 0 && (() => {
-          const contextLimit = getModelContextLimit(session.model);
-          const contextPct = contextLimit > 0 ? Math.round((session.contextSize / contextLimit) * 100) : 0;
-          return (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ color: "var(--text-muted)" }}>context </span>
-              <span style={{ color: "#00ff41" }}>
-                {formatTokenCount(session.contextSize)} / {formatTokenCount(contextLimit)}
-              </span>
-              <span style={{ color: "var(--text-muted)" }}>({contextPct}%)</span>
-              <span style={{
-                display: "inline-block",
-                width: "80px",
-                height: "8px",
-                background: "#1a1a1a",
-                borderRadius: "2px",
-                overflow: "hidden",
-                border: "1px solid #333",
-              }}>
-                <span style={{
-                  display: "block",
-                  width: `${Math.min(contextPct, 100)}%`,
-                  height: "100%",
-                  background: contextPct > 80 ? "#ffaa00" : "#00ff41",
-                  borderRadius: "1px",
-                }} />
-              </span>
-            </div>
-          );
-        })()}
+        {session.contextSize > 0 && (
+          <div>
+            <span style={{ color: "var(--text-muted)" }}>context </span>
+            <span style={{ color: "#00ff41" }}>{formatTokenCount(session.contextSize)}</span>
+          </div>
+        )}
         <div style={{ width: "100%" }}>
           <span style={{ color: "var(--text-muted)" }}>cwd </span>
           <span style={{ color: "var(--text-secondary)", fontSize: "11px" }}>

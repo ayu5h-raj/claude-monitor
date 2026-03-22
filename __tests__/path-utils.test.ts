@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractRepoName, formatRelativeTime, formatTokenCount, getModelContextLimit } from "@/lib/path-utils";
+import { extractRepoName, formatRelativeTime, formatTokenCount } from "@/lib/path-utils";
 
 describe("extractRepoName", () => {
   it("extracts repo name from simple path", () => {
@@ -60,24 +60,5 @@ describe("formatTokenCount", () => {
 
   it("formats exact thousands", () => {
     expect(formatTokenCount(1000)).toBe("1.0K");
-  });
-});
-
-describe("getModelContextLimit", () => {
-  it("returns 1M for Opus", () => {
-    expect(getModelContextLimit("claude-opus-4-6")).toBe(1_000_000);
-  });
-
-  it("returns 200K for Sonnet and Haiku", () => {
-    expect(getModelContextLimit("claude-sonnet-4-6")).toBe(200_000);
-    expect(getModelContextLimit("claude-haiku-4-5")).toBe(200_000);
-  });
-
-  it("matches model prefix for versioned variants", () => {
-    expect(getModelContextLimit("claude-haiku-4-5-20251001")).toBe(200_000);
-  });
-
-  it("returns 200K default for unknown models", () => {
-    expect(getModelContextLimit("some-future-model")).toBe(200_000);
   });
 });
