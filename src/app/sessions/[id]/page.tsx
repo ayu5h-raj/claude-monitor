@@ -317,7 +317,7 @@ export default async function SessionDetailPage({
               return (
                 <Link
                   key={filePath}
-                  href={`/files?q=${encodeURIComponent(fileName)}`}
+                  href={`/files?repo=${encodeURIComponent(session.project)}&q=${encodeURIComponent(fileName)}`}
                   style={{
                     color: "var(--text-secondary)",
                     fontSize: "12px",
