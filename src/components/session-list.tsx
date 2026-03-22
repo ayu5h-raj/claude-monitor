@@ -1,6 +1,7 @@
 import Sidebar from "@/src/components/sidebar";
 import SessionRow from "@/src/components/session-row";
-import type { SessionMetadata } from "@/lib/types";
+import SearchResults from "@/src/components/search-results";
+import type { SessionMetadata, SearchResult } from "@/lib/types";
 
 interface SerializedSession {
   id: string;
@@ -40,6 +41,8 @@ interface SessionListProps {
   tagCounts: { tag: string; count: number }[];
   selectedTag?: string;
   showBookmarked?: boolean;
+  searchQuery?: string;
+  searchResults?: SearchResult[];
 }
 
 export default function SessionList({
@@ -53,8 +56,10 @@ export default function SessionList({
   tagCounts,
   selectedTag,
   showBookmarked,
+  searchQuery,
+  searchResults,
 }: SessionListProps) {
-  const hasFilter = selectedRepo || selectedBranch || showBookmarked || selectedTag;
+  const hasFilter = selectedRepo || selectedBranch || showBookmarked || selectedTag || searchQuery;
   const selectedRepoName = repos.find((r) => r.path === selectedRepo)?.name;
 
   // Build returnUrl from current filter state
@@ -64,6 +69,9 @@ export default function SessionList({
   if (showBookmarked) params.push("bookmarked=true");
   if (selectedTag) params.push(`tag=${encodeURIComponent(selectedTag)}`);
   const returnUrl = params.length > 0 ? `/?${params.join("&")}` : "/";
+
+  // Build clear-search URL (preserves other filters)
+  const clearSearchUrl = params.length > 0 ? `/?${params.join("&")}` : "/";
 
   return (
     <div
@@ -94,34 +102,6 @@ export default function SessionList({
           flexShrink: 0,
         }}
       />
-      <script dangerouslySetInnerHTML={{ __html: `
-(function() {
-  var handle = document.getElementById('sidebar-drag');
-  var sidebar = document.getElementById('sidebar');
-  if (!handle || !sidebar) return;
-  var dragging = false, startX = 0, startW = 0;
-  handle.addEventListener('mousedown', function(e) {
-    dragging = true; startX = e.clientX; startW = sidebar.offsetWidth;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove', function(e) {
-    if (!dragging) return;
-    var w = Math.max(180, Math.min(startW + e.clientX - startX, window.innerWidth * 0.5));
-    sidebar.style.width = w + 'px';
-    sidebar.style.minWidth = w + 'px';
-  });
-  document.addEventListener('mouseup', function() {
-    if (!dragging) return;
-    dragging = false;
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-  });
-  handle.addEventListener('mouseenter', function() { handle.style.background = 'var(--green)'; });
-  handle.addEventListener('mouseleave', function() { if (!dragging) handle.style.background = 'var(--border)'; });
-})();
-      `}} />
 
       <div
         style={{
@@ -131,6 +111,70 @@ export default function SessionList({
           flexDirection: "column",
         }}
       >
+        {/* Search bar */}
+        <form
+          id="search-form"
+          method="GET"
+          action="/"
+          style={{
+            padding: "6px 16px",
+            borderBottom: "1px solid var(--border-light)",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            background: "var(--bg-secondary)",
+          }}
+        >
+          {selectedRepo && <input type="hidden" name="repo" value={selectedRepo} />}
+          {selectedBranch && <input type="hidden" name="branch" value={selectedBranch} />}
+          {showBookmarked && <input type="hidden" name="bookmarked" value="true" />}
+          {selectedTag && <input type="hidden" name="tag" value={selectedTag} />}
+          <span id="search-prompt" style={{ color: "var(--text-muted)", fontSize: "12px" }}>$</span>
+          <input
+            type="text"
+            name="q"
+            defaultValue={searchQuery || ""}
+            placeholder="search sessions..."
+            style={{
+              flex: 1,
+              background: "transparent",
+              color: "var(--text-primary)",
+              border: "none",
+              outline: "none",
+              fontSize: "12px",
+              fontFamily: "inherit",
+            }}
+          />
+          <button
+            id="search-btn"
+            type="submit"
+            style={{
+              background: "transparent",
+              color: "var(--text-muted)",
+              border: "1px solid var(--border)",
+              borderRadius: "3px",
+              padding: "2px 8px",
+              fontSize: "11px",
+              fontFamily: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            [search]
+          </button>
+          {searchQuery && (
+            <a
+              href={clearSearchUrl}
+              style={{
+                color: "var(--text-muted)",
+                fontSize: "11px",
+                textDecoration: "none",
+              }}
+            >
+              [clear]
+            </a>
+          )}
+        </form>
+
         {/* Filter breadcrumb */}
         {hasFilter && (
           <div
@@ -167,6 +211,11 @@ export default function SessionList({
                 tag:{selectedTag}
               </span>
             )}
+            {searchQuery && (
+              <span style={{ color: "var(--green)" }}>
+                search: &quot;{searchQuery}&quot;
+              </span>
+            )}
           </div>
         )}
 
@@ -199,8 +248,25 @@ export default function SessionList({
           <span />
         </div>
 
-        {/* Session rows */}
-        {sessions.length > 0 ? (
+        {/* Content: search results or session rows */}
+        {searchQuery && searchResults ? (
+          searchResults.length > 0 ? (
+            <SearchResults results={searchResults} query={searchQuery} />
+          ) : (
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--text-muted)",
+                fontSize: "13px",
+              }}
+            >
+              no results for &quot;{searchQuery}&quot;
+            </div>
+          )
+        ) : sessions.length > 0 ? (
           sessions.map((session) => {
             const meta = allMetadata[session.id];
             const notesText = meta?.notes || "";

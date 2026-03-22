@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Nav } from "@/src/components/nav";
 import "./globals.css";
 
@@ -15,8 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <script dangerouslySetInnerHTML={{ __html: `
+        <Script strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
 (function() {
+  // ─── Copy utilities ───────────────────────────────────
   window.__showCopyToast = function(msg) {
     var existing = document.getElementById('copy-toast');
     if (existing) existing.remove();
@@ -74,13 +76,151 @@ export default function RootLayout({
     }
   };
 
+  // ─── Global event delegation ──────────────────────────
   document.addEventListener('click', function(e) {
-    var btn = e.target.closest('[data-copy-resume]');
-    if (!btn) return;
-    e.preventDefault();
-    e.stopPropagation();
-    window.__copyCmd(btn.getAttribute('data-cmd'), btn, 'icon');
+    if (!e.target || !e.target.closest) return;
+
+    // Copy resume button (session rows)
+    var copyResume = e.target.closest('[data-copy-resume]');
+    if (copyResume) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.__copyCmd(copyResume.getAttribute('data-cmd'), copyResume, 'icon');
+      return;
+    }
+
+    // Resume copy button (session detail header)
+    var resumeBtn = e.target.closest('#resume-copy-btn');
+    if (resumeBtn) {
+      e.preventDefault();
+      var cmd = resumeBtn.getAttribute('data-cmd');
+      if (window.__copyCmd) {
+        window.__copyCmd(cmd, resumeBtn, 'button');
+      }
+      return;
+    }
+
+    // Quick actions copy buttons
+    var copyAction = e.target.closest('#quick-actions [data-copy-action]');
+    if (copyAction) {
+      var text = copyAction.getAttribute('data-copy-action');
+      var label = copyAction.getAttribute('data-copy-label');
+      if (window.__copyToClipboard) {
+        window.__copyToClipboard(text, label);
+      }
+      return;
+    }
+
+    // Session row more-actions menu
+    var moreActions = e.target.closest('details[data-more-actions]');
+    if (moreActions) {
+      var maSummary = e.target.closest('details[data-more-actions] > summary');
+      if (maSummary) {
+        e.stopPropagation();
+        e.preventDefault();
+        moreActions.open = !moreActions.open;
+        return;
+      }
+      var maCopy = e.target.closest('details[data-more-actions] [data-copy-action]');
+      if (maCopy) {
+        e.preventDefault();
+        e.stopPropagation();
+        var maText = maCopy.getAttribute('data-copy-action');
+        var maLabel = maCopy.getAttribute('data-copy-label');
+        if (window.__copyToClipboard) window.__copyToClipboard(maText, maLabel);
+        moreActions.removeAttribute('open');
+        return;
+      }
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
+    // Sidebar repo toggle (triangle vs link)
+    var summary = e.target.closest('summary');
+    if (summary) {
+      var details = summary.parentElement;
+      if (details && details.hasAttribute('data-repo-details')) {
+        var toggle = e.target.closest('[data-repo-toggle]');
+        var link = e.target.closest('[data-repo-link]');
+        if (link) {
+          e.preventDefault();
+          window.location.href = link.getAttribute('href');
+          return;
+        }
+        e.preventDefault();
+        details.open = !details.open;
+        return;
+      }
+    }
   });
+
+  // Hover effects for resume copy btn
+  document.addEventListener('mouseenter', function(e) {
+    if (!e.target || !e.target.closest) return;
+    var btn = e.target.closest('#resume-copy-btn');
+    if (btn) { btn.style.borderColor = 'var(--green)'; btn.style.color = 'var(--green)'; }
+    var qa = e.target.closest('#quick-actions [data-copy-action]');
+    if (qa) { qa.style.color = '#00ff41'; qa.style.borderColor = '#00ff41'; }
+  }, true);
+
+  document.addEventListener('mouseleave', function(e) {
+    if (!e.target || !e.target.closest) return;
+    var btn = e.target.closest('#resume-copy-btn');
+    if (btn) { btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text-muted)'; }
+    var qa = e.target.closest('#quick-actions [data-copy-action]');
+    if (qa) { qa.style.color = '#888'; qa.style.borderColor = '#333'; }
+  }, true);
+
+  // ─── Sidebar resize handle ────────────────────────────
+  var handle = document.getElementById('sidebar-drag');
+  var sidebar = document.getElementById('sidebar');
+  if (handle && sidebar) {
+    var dragging = false, startX = 0, startW = 0;
+    handle.addEventListener('mousedown', function(e) {
+      dragging = true; startX = e.clientX; startW = sidebar.offsetWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      var w = Math.max(180, Math.min(startW + e.clientX - startX, window.innerWidth * 0.5));
+      sidebar.style.width = w + 'px';
+      sidebar.style.minWidth = w + 'px';
+    });
+    document.addEventListener('mouseup', function() {
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+    handle.addEventListener('mouseenter', function() { handle.style.background = 'var(--green)'; });
+    handle.addEventListener('mouseleave', function() { if (!dragging) handle.style.background = 'var(--border)'; });
+  }
+
+  // ─── Search form loading state ────────────────────────
+  var searchForm = document.getElementById('search-form');
+  var searchBtn = document.getElementById('search-btn');
+  var searchPrompt = document.getElementById('search-prompt');
+  if (searchForm && searchBtn) {
+    searchForm.addEventListener('submit', function() {
+      var q = searchForm.querySelector('input[name="q"]');
+      if (q && !q.value.trim()) return;
+      searchBtn.textContent = '[searching...]';
+      searchBtn.style.color = 'var(--amber)';
+      if (searchPrompt) { searchPrompt.textContent = '~'; searchPrompt.style.color = 'var(--amber)'; }
+      searchBtn.disabled = true;
+    });
+  }
+
+  // ─── File page auto-submit ────────────────────────────
+  var repoSelect = document.getElementById('repo-select');
+  if (repoSelect) {
+    repoSelect.addEventListener('change', function() {
+      repoSelect.closest('form').submit();
+    });
+  }
 })();
         `}} />
         <Nav />

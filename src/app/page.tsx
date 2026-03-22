@@ -2,14 +2,15 @@ export const dynamic = "force-dynamic";
 
 import { getAllSessions, getProjects, getStats } from "@/lib/claude-data";
 import { getAllSessionMetadata } from "@/lib/session-metadata";
+import { searchSessions } from "@/lib/search";
 import SessionList from "@/src/components/session-list";
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ repo?: string; branch?: string; bookmarked?: string; tag?: string }>;
+  searchParams: Promise<{ repo?: string; branch?: string; bookmarked?: string; tag?: string; q?: string }>;
 }) {
-  const { repo, branch, bookmarked, tag } = await searchParams;
+  const { repo, branch, bookmarked, tag, q } = await searchParams;
 
   const [sessions, repos, stats, allMetadata] = await Promise.all([
     getAllSessions(),
@@ -64,6 +65,16 @@ export default async function Home({
     filtered = filtered.filter((s) => allMetadata[s.id]?.tags?.includes(tag));
   }
 
+  // Search
+  const searchResults = q
+    ? await searchSessions(q, {
+        repo: repo || undefined,
+        branch: branch || undefined,
+        bookmarked: bookmarked === "true" || undefined,
+        tag: tag || undefined,
+      })
+    : undefined;
+
   // Compute sidebar metadata
   const bookmarkCount = Object.values(allMetadata).filter((m) => m.bookmarked).length;
   const tagCountMap = new Map<string, number>();
@@ -88,6 +99,8 @@ export default async function Home({
       tagCounts={tagCounts}
       selectedTag={tag}
       showBookmarked={bookmarked === "true"}
+      searchQuery={q}
+      searchResults={searchResults}
     />
   );
 }

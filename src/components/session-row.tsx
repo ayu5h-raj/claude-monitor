@@ -91,6 +91,12 @@ export default function SessionRow({
     >
       <span
         title={dotTitle}
+        className={
+          session.status === "active" &&
+          (session.activeState === "working" || session.activeState === "thinking")
+            ? "live-dot"
+            : undefined
+        }
         style={{
           display: "inline-block",
           width: "8px",
@@ -190,31 +196,6 @@ export default function SessionRow({
             </button>
           </div>
         </details>
-        <script dangerouslySetInnerHTML={{ __html: `
-(function() {
-  document.querySelectorAll('details[data-more-actions]').forEach(function(d) {
-    if (d.__moreActionsInit) return;
-    d.__moreActionsInit = true;
-    d.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); });
-    d.querySelector('summary').addEventListener('click', function(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      var det = e.currentTarget.parentElement;
-      det.open = !det.open;
-    });
-    d.querySelectorAll('[data-copy-action]').forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var text = e.currentTarget.getAttribute('data-copy-action');
-        var label = e.currentTarget.getAttribute('data-copy-label');
-        if (window.__copyToClipboard) window.__copyToClipboard(text, label);
-        d.removeAttribute('open');
-      });
-    });
-  });
-})();
-`}} />
       </span>
     </Link>
   );

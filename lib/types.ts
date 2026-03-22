@@ -148,6 +148,63 @@ export interface SessionMetadata {
   updatedAt: string; // ISO timestamp
 }
 
+// ─── Code Impact ────────────────────────────────────────────────
+
+export type ChangeType = "created" | "modified" | "deleted";
+
+export interface FileChange {
+  filePath: string;
+  changeType: ChangeType;
+  edits: Array<{ oldString: string; newString: string }>;
+  createdContent?: string;
+}
+
+export interface CodeImpact {
+  filesCreated: number;
+  filesModified: number;
+  filesDeleted: number;
+  totalEdits: number;
+  linesAdded: number;
+  linesRemoved: number;
+  impactScore: number;
+  filesByDirectory: Record<string, FileChange[]>;
+  allFiles: FileChange[];
+}
+
+// ─── Search ─────────────────────────────────────────────────────
+
+export interface SearchResult {
+  sessionId: string;
+  project: string;
+  projectPath: string;
+  branch: string;
+  lastActiveAt: string;
+  snippet: string;
+  matchType: "user" | "assistant" | "tool_input" | "tool_result";
+  score: number;
+}
+
+// ─── Live Session / SSE ─────────────────────────────────────────
+
+export interface SerializedSessionEntry {
+  type: "user" | "assistant" | "tool_use" | "tool_result";
+  timestamp: string;
+  content: string;
+  model?: string;
+  usage?: TokenUsage;
+  toolName?: string;
+  toolInput?: Record<string, unknown>;
+  toolResult?: string;
+  isError?: boolean;
+  uuid: string;
+}
+
+export interface SSEMessage {
+  type: "new_entry" | "session_complete" | "heartbeat";
+  entry?: SerializedSessionEntry;
+  timestamp: string;
+}
+
 // ─── Config Inventory ───────────────────────────────────────────
 
 export interface PluginInfo {

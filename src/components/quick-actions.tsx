@@ -70,31 +70,6 @@ export function QuickActions({
       >
         [Export]
       </a>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-(function() {
-  document.querySelectorAll('#quick-actions [data-copy-action]').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      var text = e.currentTarget.getAttribute('data-copy-action');
-      var label = e.currentTarget.getAttribute('data-copy-label');
-      if (window.__copyToClipboard) {
-        window.__copyToClipboard(text, label);
-      }
-    });
-    btn.addEventListener('mouseenter', function(e) {
-      e.currentTarget.style.color = '#00ff41';
-      e.currentTarget.style.borderColor = '#00ff41';
-    });
-    btn.addEventListener('mouseleave', function(e) {
-      e.currentTarget.style.color = '#888';
-      e.currentTarget.style.borderColor = '#333';
-    });
-  });
-})();
-`,
-        }}
-      />
     </div>
   );
 }

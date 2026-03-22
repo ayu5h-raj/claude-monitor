@@ -59,6 +59,15 @@ a {
   background: var(--text-muted);
 }
 
+/* Live session pulse animation */
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.live-dot {
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
 /* Heatmap cell tooltip (CSS-only, no JS) */
 .heatmap-cell {
   position: relative;

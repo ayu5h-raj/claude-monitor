@@ -15,13 +15,15 @@ import type {
   DailyActivity,
   Repository,
   ActiveSession,
+  CodeImpact,
 } from "./types";
 import { extractRepoName } from "./path-utils";
+import { extractCodeImpact } from "./code-impact";
 
 const CLAUDE_DIR = path.join(os.homedir(), ".claude");
-const PROJECTS_DIR = path.join(CLAUDE_DIR, "projects");
+export const PROJECTS_DIR = path.join(CLAUDE_DIR, "projects");
 const STATS_FILE = path.join(CLAUDE_DIR, "stats-cache.json");
-const SESSIONS_DIR = path.join(CLAUDE_DIR, "sessions");
+export const SESSIONS_DIR = path.join(CLAUDE_DIR, "sessions");
 
 const sessionListCache = new TTLCache<Session[]>(30_000);
 const sessionDetailCache = new TTLCache<{
@@ -101,7 +103,7 @@ export async function getAllSessions(): Promise<Session[]> {
 
 export async function getSessionDetail(
   sessionId: string
-): Promise<{ session: Session; entries: SessionEntry[] } | null> {
+): Promise<{ session: Session; entries: SessionEntry[]; codeImpact: CodeImpact } | null> {
   try {
     const projectDirs = await fs.readdir(PROJECTS_DIR);
 
@@ -122,7 +124,8 @@ export async function getSessionDetail(
           const meta = extractSessionMetadata(rawEntries, sessionId);
           const status = activeSessions.has(sessionId) ? "active" : "completed";
           const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
-          return { session: { ...meta, status, activeState }, entries: cached.entries };
+          const codeImpact = extractCodeImpact(rawEntries);
+          return { session: { ...meta, status, activeState }, entries: cached.entries, codeImpact };
         }
 
         const content = await fs.readFile(filePath, "utf-8");
@@ -134,8 +137,9 @@ export async function getSessionDetail(
         const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
 
         sessionDetailCache.set(sessionId, { entries, mtime });
+        const codeImpact = extractCodeImpact(rawEntries);
 
-        return { session: { ...meta, status, activeState }, entries };
+        return { session: { ...meta, status, activeState }, entries, codeImpact };
       } catch {
         // File doesn't exist in this project dir, try next
       }

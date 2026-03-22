@@ -10,6 +10,8 @@ import { QuickActions } from "@/src/components/quick-actions";
 import { addTagAction } from "@/src/app/actions/metadata";
 import { formatTokenCount, formatDuration } from "@/lib/path-utils";
 import { getGlobalConfig, getProjectConfig } from "@/lib/config-data";
+import CodeImpactView from "@/src/components/code-impact-view";
+import LiveSession from "@/src/components/live-session";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,7 @@ export default async function SessionDetailPage({
   const { error } = await searchParams;
   const result = await getSessionDetail(id);
   if (!result) notFound();
-  const { session, entries } = result;
+  const { session, entries, codeImpact } = result;
   const metadata = await getSessionMetadata(session.id);
   const [globalConfig, projectConfig] = await Promise.all([
     getGlobalConfig(),
@@ -156,21 +158,6 @@ export default async function SessionDetailPage({
             [ copy resume cmd ]
           </span>
         </div>
-        <script dangerouslySetInnerHTML={{ __html: `
-(function() {
-  var btn = document.getElementById('resume-copy-btn');
-  if (!btn) return;
-  btn.addEventListener('mouseenter', function() { btn.style.borderColor = 'var(--green)'; btn.style.color = 'var(--green)'; });
-  btn.addEventListener('mouseleave', function() { btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text-muted)'; });
-  btn.addEventListener('click', function(e) {
-    e.preventDefault();
-    var cmd = btn.getAttribute('data-cmd');
-    if (window.__copyCmd) {
-      window.__copyCmd(cmd, btn, 'button');
-    }
-  });
-})();
-        `}} />
       </div>
 
       {/* Tags */}
@@ -291,27 +278,27 @@ export default async function SessionDetailPage({
 
       {/* Files changed */}
       {session.filesChanged.length > 0 && (
-        <div
+        <details
           style={{
             marginBottom: "24px",
-            padding: "12px",
             background: "var(--bg-tertiary)",
             border: "1px solid var(--border)",
             borderRadius: "4px",
           }}
         >
-          <div
+          <summary
             style={{
+              padding: "12px",
+              cursor: "pointer",
               color: "var(--purple)",
               fontSize: "11px",
               fontWeight: "bold",
               letterSpacing: "0.08em",
-              marginBottom: "8px",
             }}
           >
             FILES CHANGED ({session.filesChanged.length})
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          </summary>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "0 12px 12px" }}>
             {session.filesChanged.map((filePath) => {
               const fileName = filePath.split("/").pop() || filePath;
               return (
@@ -332,8 +319,11 @@ export default async function SessionDetailPage({
               );
             })}
           </div>
-        </div>
+        </details>
       )}
+
+      {/* Code Impact */}
+      <CodeImpactView impact={codeImpact} repoPath={session.projectPath} />
 
       {/* Available Configuration */}
       <details
@@ -442,26 +432,33 @@ export default async function SessionDetailPage({
         </div>
       </details>
 
-      {/* Conversation entries */}
-      <div>
-        {serializedEntries.map((entry, i) => (
-          <ConversationEntry
-            key={`${entry.uuid}-${i}`}
-            entry={entry}
-          />
-        ))}
-        {serializedEntries.length === 0 && (
-          <div
-            style={{
-              color: "var(--text-muted)",
-              textAlign: "center",
-              padding: "32px",
-            }}
-          >
-            No conversation entries found.
-          </div>
-        )}
-      </div>
+      {/* Conversation: live or static */}
+      {session.status === "active" ? (
+        <LiveSession
+          sessionId={session.id}
+          initialEntries={serializedEntries}
+        />
+      ) : (
+        <div>
+          {serializedEntries.map((entry, i) => (
+            <ConversationEntry
+              key={`${entry.uuid}-${i}`}
+              entry={entry}
+            />
+          ))}
+          {serializedEntries.length === 0 && (
+            <div
+              style={{
+                color: "var(--text-muted)",
+                textAlign: "center",
+                padding: "32px",
+              }}
+            >
+              No conversation entries found.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

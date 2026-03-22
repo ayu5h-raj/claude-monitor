@@ -93,16 +93,16 @@ export default function Sidebar({
             <details
               key={repo.path}
               open={selectedRepo === repo.path || undefined}
+              data-repo-details
             >
               <summary
                 style={{
                   listStyle: "none",
-                  cursor: "pointer",
+                  cursor: "default",
                   padding: 0,
                 }}
               >
-                <Link
-                  href={`/?repo=${encodeURIComponent(repo.path)}`}
+                <div
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -113,22 +113,25 @@ export default function Sidebar({
                       : "2px solid transparent",
                     padding: "6px 10px",
                     fontSize: "13px",
-                    textDecoration: "none",
-                    color: "inherit",
                     gap: "6px",
                   }}
                 >
                   <span
+                    data-repo-toggle
                     style={{
                       color: "var(--text-muted)",
                       fontSize: "10px",
                       flexShrink: 0,
                       width: "12px",
+                      cursor: "pointer",
+                      userSelect: "none",
                     }}
                   >
                     ▶
                   </span>
-                  <span
+                  <Link
+                    href={isRepoActive ? "/" : `/?repo=${encodeURIComponent(repo.path)}`}
+                    data-repo-link
                     style={{
                       flex: 1,
                       color: isRepoActive
@@ -137,10 +140,11 @@ export default function Sidebar({
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
+                      textDecoration: "none",
                     }}
                   >
                     {repo.name}
-                  </span>
+                  </Link>
                   <span
                     style={{
                       color: "var(--text-muted)",
@@ -150,7 +154,7 @@ export default function Sidebar({
                   >
                     {repo.sessionCount}
                   </span>
-                </Link>
+                </div>
               </summary>
 
               {/* Worktree/branch entries */}

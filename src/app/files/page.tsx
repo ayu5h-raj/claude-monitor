@@ -133,12 +133,6 @@ export default async function FilesPage({
         </div>
       </form>
 
-      {/* Auto-submit when repo dropdown changes */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `document.getElementById('repo-select')?.addEventListener('change', function() { this.form.submit(); })`,
-        }}
-      />
 
       {/* Results */}
       <div>
