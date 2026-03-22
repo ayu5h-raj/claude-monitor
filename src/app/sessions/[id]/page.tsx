@@ -197,7 +197,7 @@ export default async function SessionDetailPage({
               <button type="button" className="ide-action-btn" data-copy-action={resumeCmd} data-copy-label="resume command">Resume</button>
               <button type="button" className="ide-action-btn" data-copy-action={codeCmd} data-copy-label="code command">VS Code</button>
               <button type="button" className="ide-action-btn" data-copy-action={summary} data-copy-label="session summary">Summary</button>
-              <a href={`/api/export/${session.id}`} className="ide-action-btn" style={{ textAlign: "center", textDecoration: "none" }}>Export</a>
+              <a href={`/api/export/${session.id}`} className="ide-action-btn" style={{ textDecoration: "none" }}>Export</a>
             </div>
           </div>
 
@@ -239,12 +239,15 @@ export default async function SessionDetailPage({
                 <div className="ide-file-list">
                   {session.filesChanged.map((filePath) => {
                     const fileName = filePath.split("/").pop() || filePath;
+                    const relPath = filePath.startsWith(session.projectPath)
+                      ? filePath.slice(session.projectPath.length + 1)
+                      : filePath;
                     return (
                       <Link
                         key={filePath}
                         href={`/files?repo=${encodeURIComponent(session.project)}&q=${encodeURIComponent(fileName)}`}
                       >
-                        {filePath}
+                        {relPath}
                       </Link>
                     );
                   })}

@@ -264,6 +264,7 @@ a {
   font-size: 11px;
   cursor: pointer;
   text-align: left;
+  text-align: left;
   text-decoration: none;
   transition: border-color 0.15s, color 0.15s;
 }
