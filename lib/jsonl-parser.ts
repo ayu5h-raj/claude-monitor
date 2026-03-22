@@ -230,8 +230,9 @@ export function extractSessionMetadata(
         tokenUsage.output += usage.output_tokens || 0;
         tokenUsage.cacheRead += usage.cache_read_input_tokens || 0;
         tokenUsage.cacheCreation += usage.cache_creation_input_tokens || 0;
-        if (usage.input_tokens) {
-          contextSize = usage.input_tokens;
+        const totalInput = (usage.input_tokens || 0) + (usage.cache_read_input_tokens || 0) + (usage.cache_creation_input_tokens || 0);
+        if (totalInput > 0) {
+          contextSize = totalInput;
         }
       }
 

@@ -105,8 +105,8 @@ describe("extractSessionMetadata", () => {
   it("extracts contextSize from last assistant message input_tokens", () => {
     const raw = parseJSONLContent(fixtureContent);
     const meta = extractSessionMetadata(raw, "sess-001");
-    // Fixture has two assistant messages: input_tokens 1000, then 1500
-    expect(meta.contextSize).toBe(1500);
+    // Fixture last assistant: input_tokens 1500 + cache_read 800 + cache_creation 50 = 2350
+    expect(meta.contextSize).toBe(2350);
   });
 
   it("returns contextSize 0 when no assistant messages exist", () => {
