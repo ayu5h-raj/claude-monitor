@@ -6,6 +6,7 @@ import * as pty from "node-pty";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { getAllSessions } from "./lib/claude-data";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -147,5 +148,7 @@ app.prepare().then(() => {
 
   server.listen(port, () => {
     console.log(`> claude-monitor ready on http://${hostname}:${port}`);
+    // Pre-warm session list cache for faster first navigation
+    getAllSessions().catch(() => {});
   });
 });

@@ -78,8 +78,10 @@ const subHeaderStyle = (color: string) => ({
 });
 
 export default async function ConfigPage() {
-  const config = await getGlobalConfig();
-  const repoConfigs = await getRepoConfigs();
+  const [config, repoConfigs] = await Promise.all([
+    getGlobalConfig(),
+    getRepoConfigs(),
+  ]);
 
   const pluginCount = config.plugins.length;
   const enabledCount = config.plugins.filter((p) => p.enabled).length;

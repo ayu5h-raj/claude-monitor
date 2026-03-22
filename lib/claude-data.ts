@@ -29,7 +29,10 @@ const sessionListCache = new TTLCache<Session[]>(30_000);
 const sessionDetailCache = new TTLCache<{
   entries: SessionEntry[];
   mtime: number;
-}>(300_000);
+}>(600_000);
+
+// Deduplication map for concurrent getSessionDetail calls
+const inFlightDetailRequests = new Map<string, Promise<{ session: Session; entries: SessionEntry[]; codeImpact: CodeImpact } | null>>();
 
 async function getActiveSessions(): Promise<Map<string, ActiveSession>> {
   const map = new Map<string, ActiveSession>();
@@ -104,51 +107,64 @@ export async function getAllSessions(): Promise<Session[]> {
 export async function getSessionDetail(
   sessionId: string
 ): Promise<{ session: Session; entries: SessionEntry[]; codeImpact: CodeImpact } | null> {
-  try {
-    const projectDirs = await fs.readdir(PROJECTS_DIR);
+  // Return existing in-flight request if one exists (deduplication)
+  const existing = inFlightDetailRequests.get(sessionId);
+  if (existing) return existing;
 
-    for (const projectDir of projectDirs) {
-      const projectPath = path.join(PROJECTS_DIR, projectDir);
-      const filePath = path.join(projectPath, `${sessionId}.jsonl`);
+  const promise = (async () => {
+    try {
+      const projectDirs = await fs.readdir(PROJECTS_DIR);
 
-      try {
-        const stat = await fs.stat(filePath);
-        const mtime = stat.mtimeMs;
+      for (const projectDir of projectDirs) {
+        const projectPath = path.join(PROJECTS_DIR, projectDir);
+        const filePath = path.join(projectPath, `${sessionId}.jsonl`);
 
-        const cached = sessionDetailCache.get(sessionId);
-        if (cached && cached.mtime === mtime) {
-          const rawEntries = parseJSONLContent(
-            await fs.readFile(filePath, "utf-8")
-          );
-          const activeSessions = await getActiveSessions();
+        try {
+          const stat = await fs.stat(filePath);
+          const mtime = stat.mtimeMs;
+
+          const cached = sessionDetailCache.get(sessionId);
+          if (cached && cached.mtime === mtime) {
+            const rawEntries = parseJSONLContent(
+              await fs.readFile(filePath, "utf-8")
+            );
+            const activeSessions = await getActiveSessions();
+            const meta = extractSessionMetadata(rawEntries, sessionId);
+            const status = activeSessions.has(sessionId) ? "active" : "completed";
+            const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
+            const codeImpact = extractCodeImpact(rawEntries);
+            return { session: { ...meta, status, activeState }, entries: cached.entries, codeImpact };
+          }
+
+          const content = await fs.readFile(filePath, "utf-8");
+          const rawEntries = parseJSONLContent(content);
+          const entries = mapRawEntriesToSessionEntries(rawEntries);
           const meta = extractSessionMetadata(rawEntries, sessionId);
+          const activeSessions = await getActiveSessions();
           const status = activeSessions.has(sessionId) ? "active" : "completed";
           const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
+
+          sessionDetailCache.set(sessionId, { entries, mtime });
           const codeImpact = extractCodeImpact(rawEntries);
-          return { session: { ...meta, status, activeState }, entries: cached.entries, codeImpact };
+
+          return { session: { ...meta, status, activeState }, entries, codeImpact };
+        } catch {
+          // File doesn't exist in this project dir, try next
         }
-
-        const content = await fs.readFile(filePath, "utf-8");
-        const rawEntries = parseJSONLContent(content);
-        const entries = mapRawEntriesToSessionEntries(rawEntries);
-        const meta = extractSessionMetadata(rawEntries, sessionId);
-        const activeSessions = await getActiveSessions();
-        const status = activeSessions.has(sessionId) ? "active" : "completed";
-        const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
-
-        sessionDetailCache.set(sessionId, { entries, mtime });
-        const codeImpact = extractCodeImpact(rawEntries);
-
-        return { session: { ...meta, status, activeState }, entries, codeImpact };
-      } catch {
-        // File doesn't exist in this project dir, try next
       }
+    } catch {
+      return null;
     }
-  } catch {
-    return null;
-  }
 
-  return null;
+    return null;
+  })();
+
+  inFlightDetailRequests.set(sessionId, promise);
+  try {
+    return await promise;
+  } finally {
+    inFlightDetailRequests.delete(sessionId);
+  }
 }
 
 export async function getStats(): Promise<StatsData | null> {
