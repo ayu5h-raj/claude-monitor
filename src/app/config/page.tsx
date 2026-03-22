@@ -1,15 +1,89 @@
 export const dynamic = "force-dynamic";
 
-import { getGlobalConfig } from "@/lib/config-data";
+import { getGlobalConfig, getRepoConfigs } from "@/lib/config-data";
 import StatCard from "@/components/stat-card";
+
+const sectionHeaderStyle = {
+  textTransform: "uppercase" as const,
+  fontSize: "10px",
+  color: "var(--text-muted)",
+  letterSpacing: "0.1em",
+  borderBottom: "1px solid var(--border)",
+  paddingBottom: "8px",
+  marginBottom: "16px",
+  marginTop: "32px",
+};
+
+const preStyle = {
+  margin: 0,
+  fontFamily: "monospace",
+  fontSize: "11px",
+  color: "var(--text-secondary)",
+  whiteSpace: "pre-wrap" as const,
+  wordBreak: "break-word" as const,
+  maxHeight: "400px",
+  overflow: "auto" as const,
+  padding: "12px",
+  background: "var(--bg-secondary)",
+  borderRadius: "4px",
+};
+
+const panelStyle = {
+  background: "var(--bg-tertiary)",
+  border: "1px solid var(--border)",
+  borderRadius: "4px",
+  marginBottom: "24px",
+};
+
+const panelHeaderStyle = (color: string) => ({
+  padding: "10px 16px",
+  borderBottom: "1px solid var(--border)",
+  color,
+  fontSize: "11px",
+  letterSpacing: "0.08em",
+  textTransform: "uppercase" as const,
+});
+
+const summaryStyle = {
+  padding: "8px 16px",
+  cursor: "pointer" as const,
+  display: "flex" as const,
+  alignItems: "center" as const,
+  gap: "10px",
+  fontSize: "13px",
+  listStyle: "none" as const,
+};
+
+const badgeStyle = (color: string) => ({
+  fontSize: "10px",
+  padding: "1px 6px",
+  borderRadius: "3px",
+  background: "var(--bg-secondary)",
+  color,
+});
+
+const emptyStyle = {
+  padding: "32px",
+  textAlign: "center" as const,
+  color: "var(--text-muted)",
+};
+
+const subHeaderStyle = (color: string) => ({
+  fontSize: "11px",
+  color,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase" as const,
+  marginBottom: "8px",
+  marginTop: "12px",
+});
 
 export default async function ConfigPage() {
   const config = await getGlobalConfig();
+  const repoConfigs = await getRepoConfigs();
 
   const pluginCount = config.plugins.length;
   const enabledCount = config.plugins.filter((p) => p.enabled).length;
 
-  // Total skills = global skills + all plugin-embedded skills
   const pluginSkillCount = config.plugins.reduce(
     (sum, p) => sum + p.skills.length,
     0
@@ -18,13 +92,12 @@ export default async function ConfigPage() {
   const totalSkills = globalSkillCount + pluginSkillCount;
 
   const mcpServerCount = config.mcpServers.length;
-  const commandCount = config.commands.length;
 
-  // Collect all skills: global first, then plugin-embedded
-  const allSkills = [
-    ...config.skills,
-    ...config.plugins.flatMap((p) => p.skills),
-  ];
+  // Global commands only (not plugin commands)
+  const globalCommands = config.commands.filter((c) => c.source === "global");
+  const globalCommandCount = globalCommands.length;
+
+  const repoCount = repoConfigs.length;
 
   return (
     <div style={{ padding: "16px", maxWidth: "1000px", margin: "0 auto" }}>
@@ -32,7 +105,7 @@ export default async function ConfigPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(5, 1fr)",
           gap: "12px",
           marginBottom: "24px",
         }}
@@ -56,43 +129,30 @@ export default async function ConfigPage() {
         />
         <StatCard
           label="Commands"
-          value={String(commandCount)}
+          value={String(globalCommandCount)}
           color="var(--purple)"
+        />
+        <StatCard
+          label="Repos"
+          value={String(repoCount)}
+          subtitle="with config"
+          color="#00cccc"
         />
       </div>
 
-      {/* ── Plugins Section ── */}
-      <div
-        style={{
-          background: "var(--bg-tertiary)",
-          border: "1px solid var(--border)",
-          borderRadius: "4px",
-          marginBottom: "24px",
-        }}
-      >
-        <div
-          style={{
-            padding: "10px 16px",
-            borderBottom: "1px solid var(--border)",
-            color: "var(--green)",
-            fontSize: "11px",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-          }}
-        >
+      {/* ══════════════════════════════════════════════════════════════
+          GLOBAL CONFIGURATION
+         ══════════════════════════════════════════════════════════════ */}
+      <div style={sectionHeaderStyle}>Global Configuration</div>
+
+      {/* ── Plugins Section (kept as-is) ── */}
+      <div style={panelStyle}>
+        <div style={panelHeaderStyle("var(--green)")}>
           Plugins ({pluginCount})
         </div>
 
         {config.plugins.length === 0 && (
-          <div
-            style={{
-              padding: "32px",
-              textAlign: "center",
-              color: "var(--text-muted)",
-            }}
-          >
-            no plugins installed
-          </div>
+          <div style={emptyStyle}>no plugins installed</div>
         )}
 
         {config.plugins.map((plugin) => {
@@ -105,22 +165,9 @@ export default async function ConfigPage() {
           return (
             <details
               key={`${plugin.marketplace}-${plugin.name}`}
-              style={{
-                borderBottom: "1px solid var(--border-light)",
-              }}
+              style={{ borderBottom: "1px solid var(--border-light)" }}
             >
-              <summary
-                style={{
-                  padding: "8px 16px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  fontSize: "13px",
-                  listStyle: "none",
-                }}
-              >
-                {/* Status dot */}
+              <summary style={summaryStyle}>
                 <span
                   style={{
                     width: "8px",
@@ -134,15 +181,7 @@ export default async function ConfigPage() {
                 <span style={{ color: "var(--text-primary)" }}>
                   {plugin.name}
                 </span>
-                <span
-                  style={{
-                    fontSize: "10px",
-                    padding: "1px 6px",
-                    borderRadius: "3px",
-                    background: "var(--bg-secondary)",
-                    color: "var(--text-muted)",
-                  }}
-                >
+                <span style={badgeStyle("var(--text-muted)")}>
                   {plugin.marketplace}
                 </span>
                 {plugin.blocked && (
@@ -217,173 +256,115 @@ export default async function ConfigPage() {
         })}
       </div>
 
-      {/* ── Skills Section ── */}
-      <div
-        style={{
-          background: "var(--bg-tertiary)",
-          border: "1px solid var(--border)",
-          borderRadius: "4px",
-          marginBottom: "24px",
-        }}
-      >
-        <div
-          style={{
-            padding: "10px 16px",
-            borderBottom: "1px solid var(--border)",
-            color: "var(--blue)",
-            fontSize: "11px",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-          }}
-        >
-          Skills ({totalSkills})
+      {/* ── Global Skills Section ── */}
+      <div style={panelStyle}>
+        <div style={panelHeaderStyle("var(--blue)")}>
+          Global Skills ({globalSkillCount})
         </div>
 
-        {allSkills.length === 0 && (
-          <div
-            style={{
-              padding: "32px",
-              textAlign: "center",
-              color: "var(--text-muted)",
-            }}
-          >
-            no skills configured
-          </div>
+        {config.skills.length === 0 && (
+          <div style={emptyStyle}>no global skills configured</div>
         )}
 
-        {allSkills.map((skill) => (
+        {config.skills.map((skill) => (
           <details
-            key={`${skill.source}-${skill.pluginName ?? "global"}-${skill.name}`}
-            style={{
-              borderBottom: "1px solid var(--border-light)",
-            }}
+            key={`global-skill-${skill.name}`}
+            style={{ borderBottom: "1px solid var(--border-light)" }}
           >
-            <summary
-              style={{
-                padding: "8px 16px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                fontSize: "13px",
-                listStyle: "none",
-              }}
-            >
-              <span style={{ color: "var(--text-primary)" }}>{skill.name}</span>
-              <span
-                style={{
-                  fontSize: "10px",
-                  padding: "1px 6px",
-                  borderRadius: "3px",
-                  background: "var(--bg-secondary)",
-                  color:
-                    skill.source === "global"
-                      ? "var(--blue)"
-                      : "var(--text-muted)",
-                }}
-              >
-                {skill.source === "global" ? "global" : skill.pluginName}
+            <summary style={summaryStyle}>
+              <span style={{ color: "var(--text-primary)" }}>
+                {skill.name}
               </span>
+              <span style={badgeStyle("var(--blue)")}>global</span>
             </summary>
-            <div
-              style={{
-                padding: "8px 16px 12px 34px",
-                fontSize: "12px",
-                color: "var(--text-secondary)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-              }}
-            >
-              {skill.description && (
-                <div>
-                  <span style={{ color: "var(--text-muted)" }}>desc: </span>
-                  {skill.description}
+            <div style={{ padding: "8px 16px 12px 34px", fontSize: "12px" }}>
+              {skill.content ? (
+                <pre style={preStyle}>{skill.content}</pre>
+              ) : (
+                <div
+                  style={{
+                    color: "var(--text-secondary)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                  }}
+                >
+                  {skill.description && (
+                    <div>
+                      <span style={{ color: "var(--text-muted)" }}>
+                        desc:{" "}
+                      </span>
+                      {skill.description}
+                    </div>
+                  )}
+                  {skill.allowedTools && skill.allowedTools.length > 0 && (
+                    <div>
+                      <span style={{ color: "var(--text-muted)" }}>
+                        allowed tools:{" "}
+                      </span>
+                      {skill.allowedTools.join(", ")}
+                    </div>
+                  )}
+                  {!skill.description &&
+                    (!skill.allowedTools ||
+                      skill.allowedTools.length === 0) && (
+                      <div style={{ color: "var(--text-muted)" }}>
+                        no additional details
+                      </div>
+                    )}
                 </div>
               )}
-              {skill.allowedTools && skill.allowedTools.length > 0 && (
-                <div>
-                  <span style={{ color: "var(--text-muted)" }}>
-                    allowed tools:{" "}
-                  </span>
-                  {skill.allowedTools.join(", ")}
-                </div>
-              )}
-              {!skill.description &&
-                (!skill.allowedTools || skill.allowedTools.length === 0) && (
-                  <div style={{ color: "var(--text-muted)" }}>
-                    no additional details
-                  </div>
-                )}
             </div>
           </details>
         ))}
       </div>
 
-      {/* ── MCP Servers Section ── */}
-      <div
-        style={{
-          background: "var(--bg-tertiary)",
-          border: "1px solid var(--border)",
-          borderRadius: "4px",
-          marginBottom: "24px",
-        }}
-      >
-        <div
-          style={{
-            padding: "10px 16px",
-            borderBottom: "1px solid var(--border)",
-            color: "var(--amber)",
-            fontSize: "11px",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-          }}
-        >
+      {/* ── Global Commands Section ── */}
+      <div style={panelStyle}>
+        <div style={panelHeaderStyle("var(--purple)")}>
+          Global Commands ({globalCommandCount})
+        </div>
+
+        {globalCommands.length === 0 && (
+          <div style={emptyStyle}>no global commands found</div>
+        )}
+
+        {globalCommands.map((cmd) => (
+          <details
+            key={`global-cmd-${cmd.name}`}
+            style={{ borderBottom: "1px solid var(--border-light)" }}
+          >
+            <summary style={summaryStyle}>
+              <span style={{ color: "var(--text-primary)" }}>/{cmd.name}</span>
+              <span style={badgeStyle("var(--blue)")}>global</span>
+            </summary>
+            <div style={{ padding: "8px 16px 12px 34px", fontSize: "12px" }}>
+              <pre style={preStyle}>{cmd.content || cmd.preview}</pre>
+            </div>
+          </details>
+        ))}
+      </div>
+
+      {/* ── MCP Servers Section (kept as-is) ── */}
+      <div style={panelStyle}>
+        <div style={panelHeaderStyle("var(--amber)")}>
           MCP Servers ({mcpServerCount})
         </div>
 
         {config.mcpServers.length === 0 && (
-          <div
-            style={{
-              padding: "32px",
-              textAlign: "center",
-              color: "var(--text-muted)",
-            }}
-          >
-            no MCP servers configured
-          </div>
+          <div style={emptyStyle}>no MCP servers configured</div>
         )}
 
         {config.mcpServers.map((server) => (
           <details
             key={`${server.source}-${server.pluginName ?? "project"}-${server.name}`}
-            style={{
-              borderBottom: "1px solid var(--border-light)",
-            }}
+            style={{ borderBottom: "1px solid var(--border-light)" }}
           >
-            <summary
-              style={{
-                padding: "8px 16px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                fontSize: "13px",
-                listStyle: "none",
-              }}
-            >
+            <summary style={summaryStyle}>
               <span style={{ color: "var(--text-primary)" }}>
                 {server.name}
               </span>
-              <span
-                style={{
-                  fontSize: "10px",
-                  padding: "1px 6px",
-                  borderRadius: "3px",
-                  background: "var(--bg-secondary)",
-                  color: "var(--text-muted)",
-                }}
-              >
+              <span style={badgeStyle("var(--text-muted)")}>
                 {server.pluginName ?? "project"}
               </span>
             </summary>
@@ -415,50 +396,25 @@ export default async function ConfigPage() {
         ))}
       </div>
 
-      {/* ── Commands Section ── */}
-      <div
-        style={{
-          background: "var(--bg-tertiary)",
-          border: "1px solid var(--border)",
-          borderRadius: "4px",
-          marginBottom: "24px",
-        }}
-      >
-        <div
-          style={{
-            padding: "10px 16px",
-            borderBottom: "1px solid var(--border)",
-            color: "var(--purple)",
-            fontSize: "11px",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-          }}
-        >
-          Commands ({commandCount})
+      {/* ══════════════════════════════════════════════════════════════
+          PER-REPO CONFIGURATION
+         ══════════════════════════════════════════════════════════════ */}
+      <div style={sectionHeaderStyle}>
+        Per-Repo Configuration ({repoCount} repos)
+      </div>
+
+      {repoConfigs.length === 0 && (
+        <div style={{ ...panelStyle, ...emptyStyle }}>
+          no repos with configuration found
         </div>
+      )}
 
-        {config.commands.length === 0 && (
-          <div
-            style={{
-              padding: "32px",
-              textAlign: "center",
-              color: "var(--text-muted)",
-            }}
-          >
-            no custom commands found
-          </div>
-        )}
-
-        {config.commands.map((cmd) => (
-          <details
-            key={`${cmd.source}-${cmd.pluginName ?? "global"}-${cmd.name}`}
-            style={{
-              borderBottom: "1px solid var(--border-light)",
-            }}
-          >
+      {repoConfigs.map((repo) => (
+        <div key={repo.repoPath} style={{ ...panelStyle }}>
+          <details>
             <summary
               style={{
-                padding: "8px 16px",
+                padding: "10px 16px",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -467,44 +423,241 @@ export default async function ConfigPage() {
                 listStyle: "none",
               }}
             >
-              <span style={{ color: "var(--text-primary)" }}>/{cmd.name}</span>
+              <span style={{ color: "#00cccc", fontWeight: "bold" }}>
+                {repo.repoName}
+              </span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                  flex: 1,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {repo.repoPath}
+              </span>
               <span
                 style={{
                   fontSize: "10px",
-                  padding: "1px 6px",
-                  borderRadius: "3px",
-                  background: "var(--bg-secondary)",
-                  color:
-                    cmd.source === "global"
-                      ? "var(--blue)"
-                      : "var(--text-muted)",
+                  color: "var(--text-muted)",
+                  flexShrink: 0,
                 }}
               >
-                {cmd.source === "global" ? "global" : cmd.pluginName}
+                {repo.sessionCount} sessions
               </span>
             </summary>
+
             <div
               style={{
-                padding: "8px 16px 12px 34px",
-                fontSize: "12px",
+                paddingLeft: "16px",
+                paddingRight: "16px",
+                paddingBottom: "12px",
               }}
             >
-              <pre
-                style={{
-                  margin: 0,
-                  fontFamily: "monospace",
-                  fontSize: "11px",
-                  color: "var(--text-muted)",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {cmd.preview}
-              </pre>
+              {/* CLAUDE.md */}
+              {repo.claudeMdContent && (
+                <details
+                  style={{
+                    borderBottom: "1px solid var(--border-light)",
+                    marginBottom: "4px",
+                  }}
+                >
+                  <summary
+                    style={{
+                      ...summaryStyle,
+                      padding: "6px 0",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    CLAUDE.md
+                  </summary>
+                  <div style={{ padding: "4px 0 8px" }}>
+                    <pre style={preStyle}>{repo.claudeMdContent}</pre>
+                  </div>
+                </details>
+              )}
+
+              {/* AGENTS.md */}
+              {repo.agentsMdContent && (
+                <details
+                  style={{
+                    borderBottom: "1px solid var(--border-light)",
+                    marginBottom: "4px",
+                  }}
+                >
+                  <summary
+                    style={{
+                      ...summaryStyle,
+                      padding: "6px 0",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    AGENTS.md
+                  </summary>
+                  <div style={{ padding: "4px 0 8px" }}>
+                    <pre style={preStyle}>{repo.agentsMdContent}</pre>
+                  </div>
+                </details>
+              )}
+
+              {/* Commands */}
+              {repo.commands.length > 0 && (
+                <div style={{ marginTop: "8px" }}>
+                  <div style={subHeaderStyle("var(--purple)")}>
+                    Commands ({repo.commands.length})
+                  </div>
+                  {repo.commands.map((cmd) => (
+                    <details
+                      key={cmd.name}
+                      style={{
+                        borderBottom: "1px solid var(--border-light)",
+                        marginBottom: "2px",
+                      }}
+                    >
+                      <summary
+                        style={{
+                          ...summaryStyle,
+                          padding: "6px 0",
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        /{cmd.name}
+                      </summary>
+                      <div style={{ padding: "4px 0 8px" }}>
+                        <pre style={preStyle}>{cmd.content}</pre>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              )}
+
+              {/* Skills */}
+              {repo.skills.length > 0 && (
+                <div style={{ marginTop: "8px" }}>
+                  <div style={subHeaderStyle("var(--blue)")}>
+                    Skills ({repo.skills.length})
+                  </div>
+                  {repo.skills.map((skill) => (
+                    <details
+                      key={skill.name}
+                      style={{
+                        borderBottom: "1px solid var(--border-light)",
+                        marginBottom: "2px",
+                      }}
+                    >
+                      <summary
+                        style={{
+                          ...summaryStyle,
+                          padding: "6px 0",
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        {skill.name}
+                      </summary>
+                      <div style={{ padding: "4px 0 8px" }}>
+                        <pre style={preStyle}>{skill.content}</pre>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              )}
+
+              {/* Permissions */}
+              {repo.permissions && (
+                <div style={{ marginTop: "8px" }}>
+                  <div style={subHeaderStyle("var(--green)")}>Permissions</div>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--text-secondary)",
+                      padding: "4px 0",
+                    }}
+                  >
+                    <div style={{ marginBottom: "4px" }}>
+                      <span style={{ color: "var(--text-muted)" }}>
+                        allow:{" "}
+                      </span>
+                      {repo.permissions.allow.length > 0 ? (
+                        repo.permissions.allow.map((p) => (
+                          <span
+                            key={p}
+                            style={{
+                              ...badgeStyle("var(--green)"),
+                              marginRight: "4px",
+                              display: "inline-block",
+                              marginBottom: "2px",
+                            }}
+                          >
+                            {p}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: "var(--text-muted)" }}>none</span>
+                      )}
+                    </div>
+                    {repo.permissions.deny && repo.permissions.deny.length > 0 && (
+                      <div>
+                        <span style={{ color: "var(--text-muted)" }}>
+                          deny:{" "}
+                        </span>
+                        {repo.permissions.deny.map((p) => (
+                          <span
+                            key={p}
+                            style={{
+                              ...badgeStyle("var(--red)"),
+                              marginRight: "4px",
+                              display: "inline-block",
+                              marginBottom: "2px",
+                            }}
+                          >
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Hooks */}
+              {repo.hooks && repo.hooks.length > 0 && (
+                <div style={{ marginTop: "8px" }}>
+                  <div style={subHeaderStyle("var(--amber)")}>
+                    Hooks ({repo.hooks.length})
+                  </div>
+                  {repo.hooks.map((hook, i) => (
+                    <div
+                      key={`${hook.event}-${i}`}
+                      style={{
+                        fontSize: "12px",
+                        color: "var(--text-secondary)",
+                        padding: "4px 0",
+                        borderBottom: "1px solid var(--border-light)",
+                      }}
+                    >
+                      <span style={{ color: "var(--amber)" }}>
+                        {hook.event}
+                      </span>
+                      {hook.matcher && (
+                        <span style={{ color: "var(--text-muted)" }}>
+                          {" "}
+                          ({hook.matcher})
+                        </span>
+                      )}
+                      <span style={{ color: "var(--text-muted)" }}> → </span>
+                      <span style={{ fontFamily: "monospace", fontSize: "11px" }}>
+                        {hook.commands.join(", ")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </details>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
