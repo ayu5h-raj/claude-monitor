@@ -11,6 +11,7 @@ import type {
   Session,
   SessionEntry,
   StatsData,
+  DailyActivity,
   Repository,
   ActiveSession,
 } from "./types";
@@ -143,21 +144,72 @@ export async function getSessionDetail(
 }
 
 export async function getStats(): Promise<StatsData | null> {
+  let cached: Record<string, unknown> | null = null;
   try {
     const content = await fs.readFile(STATS_FILE, "utf-8");
-    const raw = JSON.parse(content);
-    return {
-      totalSessions: raw.totalSessions || 0,
-      totalMessages: raw.totalMessages || 0,
-      dailyActivity: raw.dailyActivity || [],
-      dailyModelTokens: raw.dailyModelTokens || [],
-      modelUsage: raw.modelUsage || {},
-      longestSession: raw.longestSession,
-      firstSessionDate: raw.firstSessionDate,
-    };
+    cached = JSON.parse(content);
   } catch {
-    return null;
+    // Cache file missing or unreadable
   }
+
+  const sessions = await getAllSessions();
+  if (!cached && sessions.length === 0) return null;
+
+  // Compute dailyActivity from live session data
+  const liveDaily = new Map<string, DailyActivity>();
+  for (const s of sessions) {
+    const dateStr = s.startedAt.toISOString().slice(0, 10);
+    const existing = liveDaily.get(dateStr);
+    if (existing) {
+      existing.sessionCount += 1;
+      existing.messageCount += s.messageCount;
+      existing.toolCallCount += s.toolCallCount;
+    } else {
+      liveDaily.set(dateStr, {
+        date: dateStr,
+        sessionCount: 1,
+        messageCount: s.messageCount,
+        toolCallCount: s.toolCallCount,
+      });
+    }
+  }
+
+  // Merge with cache data (keep max per day to preserve data from deleted sessions)
+  const cachedDaily: DailyActivity[] =
+    (cached?.dailyActivity as DailyActivity[]) || [];
+  const merged = new Map<string, DailyActivity>(liveDaily);
+  for (const day of cachedDaily) {
+    const live = merged.get(day.date);
+    if (!live) {
+      merged.set(day.date, day);
+    } else {
+      // Keep whichever has more activity (cache may have data from deleted sessions)
+      const liveTotal =
+        live.sessionCount + live.messageCount + live.toolCallCount;
+      const cachedTotal =
+        day.sessionCount + day.messageCount + day.toolCallCount;
+      if (cachedTotal > liveTotal) {
+        merged.set(day.date, day);
+      }
+    }
+  }
+
+  const dailyActivity = Array.from(merged.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+
+  return {
+    totalSessions: Math.max(sessions.length, (cached?.totalSessions as number) || 0),
+    totalMessages: Math.max(
+      sessions.reduce((sum, s) => sum + s.messageCount, 0),
+      (cached?.totalMessages as number) || 0
+    ),
+    dailyActivity,
+    dailyModelTokens: (cached?.dailyModelTokens as StatsData["dailyModelTokens"]) || [],
+    modelUsage: (cached?.modelUsage as StatsData["modelUsage"]) || {},
+    longestSession: cached?.longestSession as StatsData["longestSession"],
+    firstSessionDate: cached?.firstSessionDate as string | undefined,
+  };
 }
 
 export async function getProjects(): Promise<Repository[]> {
