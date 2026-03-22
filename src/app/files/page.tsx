@@ -1,7 +1,9 @@
 export const dynamic = "force-dynamic";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { getFileHistory, getProjects } from "@/lib/claude-data";
+import TerminalLoader from "@/src/components/terminal-loader";
 
 function shortenPath(filePath: string): string {
   const parts = filePath.split("/");
@@ -15,13 +17,7 @@ function shortenPath(filePath: string): string {
   return filePath;
 }
 
-export default async function FilesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; repo?: string }>;
-}) {
-  const { q, repo } = await searchParams;
-
+async function FilesContent({ q, repo }: { q?: string; repo?: string }) {
   // Only load file history when a repo is selected (avoids loading all sessions upfront)
   const projects = await getProjects();
   const repoNames = projects.map((p) => p.name);
@@ -41,7 +37,7 @@ export default async function FilesPage({
 
   return (
     <div style={{ padding: "16px", maxWidth: "1000px", margin: "0 auto" }}>
-      {/* Search bar + repo filter — uses native form (no JS needed) */}
+      {/* Search bar + repo filter -- uses native form (no JS needed) */}
       <form
         action="/files"
         method="GET"
@@ -60,7 +56,7 @@ export default async function FilesPage({
         >
           <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>$</span>
 
-          {/* Repo dropdown — auto-submits via inline script below */}
+          {/* Repo dropdown -- auto-submits via inline script below */}
           <select
             name="repo"
             defaultValue={repo || ""}
@@ -232,5 +228,19 @@ export default async function FilesPage({
         )}
       </div>
     </div>
+  );
+}
+
+export default async function FilesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; repo?: string }>;
+}) {
+  const { q, repo } = await searchParams;
+
+  return (
+    <Suspense fallback={<TerminalLoader message="loading files" />}>
+      <FilesContent q={q} repo={repo} />
+    </Suspense>
   );
 }

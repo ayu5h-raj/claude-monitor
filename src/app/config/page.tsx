@@ -1,7 +1,9 @@
 export const dynamic = "force-dynamic";
 
+import { Suspense } from "react";
 import { getGlobalConfig, getRepoConfigs } from "@/lib/config-data";
 import StatCard from "@/components/stat-card";
+import TerminalLoader from "@/src/components/terminal-loader";
 
 const sectionHeaderStyle = {
   textTransform: "uppercase" as const,
@@ -77,7 +79,7 @@ const subHeaderStyle = (color: string) => ({
   marginTop: "12px",
 });
 
-export default async function ConfigPage() {
+async function ConfigContent() {
   const [config, repoConfigs] = await Promise.all([
     getGlobalConfig(),
     getRepoConfigs(),
@@ -142,12 +144,10 @@ export default async function ConfigPage() {
         />
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════
-          GLOBAL CONFIGURATION
-         ══════════════════════════════════════════════════════════════ */}
+      {/* Global Configuration */}
       <div style={sectionHeaderStyle}>Global Configuration</div>
 
-      {/* ── Plugins Section ── */}
+      {/* Plugins Section */}
       <details style={panelStyle}>
         <summary style={{ ...panelHeaderStyle("var(--green)"), cursor: "pointer" }}>
           Plugins ({pluginCount})
@@ -258,7 +258,7 @@ export default async function ConfigPage() {
         })}
       </details>
 
-      {/* ── Global Skills Section ── */}
+      {/* Global Skills Section */}
       <details style={panelStyle}>
         <summary style={{ ...panelHeaderStyle("var(--blue)"), cursor: "pointer" }}>
           Global Skills ({globalSkillCount})
@@ -321,7 +321,7 @@ export default async function ConfigPage() {
         ))}
       </details>
 
-      {/* ── Global Commands Section ── */}
+      {/* Global Commands Section */}
       <details style={panelStyle}>
         <summary style={{ ...panelHeaderStyle("var(--purple)"), cursor: "pointer" }}>
           Global Commands ({globalCommandCount})
@@ -347,7 +347,7 @@ export default async function ConfigPage() {
         ))}
       </details>
 
-      {/* ── MCP Servers Section ── */}
+      {/* MCP Servers Section */}
       <details style={panelStyle}>
         <summary style={{ ...panelHeaderStyle("var(--amber)"), cursor: "pointer" }}>
           MCP Servers ({mcpServerCount})
@@ -398,9 +398,7 @@ export default async function ConfigPage() {
         ))}
       </details>
 
-      {/* ══════════════════════════════════════════════════════════════
-          PER-REPO CONFIGURATION
-         ══════════════════════════════════════════════════════════════ */}
+      {/* Per-Repo Configuration */}
       <div style={sectionHeaderStyle}>
         Per-Repo Configuration ({repoCount} repos)
       </div>
@@ -712,5 +710,13 @@ export default async function ConfigPage() {
         </div>
       ))}
     </div>
+  );
+}
+
+export default function ConfigPage() {
+  return (
+    <Suspense fallback={<TerminalLoader message="loading config" />}>
+      <ConfigContent />
+    </Suspense>
   );
 }

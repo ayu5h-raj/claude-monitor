@@ -1,12 +1,14 @@
 export const dynamic = "force-dynamic";
 
+import { Suspense } from "react";
 import { getStats, getAllSessions } from "@/lib/claude-data";
 import { formatTokenCount, formatDuration } from "@/lib/path-utils";
 import StatCard from "@/components/stat-card";
 import ContributionHeatmap from "@/components/contribution-heatmap";
 import ModelBreakdown from "@/components/model-breakdown";
+import TerminalLoader from "@/src/components/terminal-loader";
 
-export default async function StatsPage() {
+async function StatsContent() {
   const [stats, sessions] = await Promise.all([getStats(), getAllSessions()]);
 
   if (!stats) {
@@ -122,5 +124,13 @@ export default async function StatsPage() {
       {/* Full-width model breakdown */}
       <ModelBreakdown modelUsage={stats.modelUsage} />
     </div>
+  );
+}
+
+export default function StatsPage() {
+  return (
+    <Suspense fallback={<TerminalLoader message="loading stats" />}>
+      <StatsContent />
+    </Suspense>
   );
 }

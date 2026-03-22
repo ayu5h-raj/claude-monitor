@@ -1,9 +1,11 @@
 export const dynamic = "force-dynamic";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { getToolAnalytics } from "@/lib/claude-data";
+import TerminalLoader from "@/src/components/terminal-loader";
 
-export default async function ToolsPage() {
+async function ToolsContent() {
   const { tools, recentErrors } = await getToolAnalytics();
 
   const totalCalls = tools.reduce((sum, t) => sum + t.totalCalls, 0);
@@ -220,5 +222,13 @@ export default async function ToolsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ToolsPage() {
+  return (
+    <Suspense fallback={<TerminalLoader message="loading tools" />}>
+      <ToolsContent />
+    </Suspense>
   );
 }
