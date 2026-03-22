@@ -146,3 +146,58 @@ export interface SessionMetadata {
   notes?: string;
   updatedAt: string; // ISO timestamp
 }
+
+// ─── Config Inventory ───────────────────────────────────────────
+
+export interface PluginInfo {
+  name: string;
+  marketplace: string;
+  version: string;
+  enabled: boolean;
+  blocked?: { reason: string; text: string };
+  description?: string;
+  mcpServers: McpServerInfo[];
+  hooks: HookInfo[];
+  skills: SkillInfo[];
+  commands: CommandInfo[];
+}
+
+export interface SkillInfo {
+  name: string;
+  description?: string;
+  source: "global" | "plugin";
+  pluginName?: string;
+  allowedTools?: string[];
+}
+
+export interface McpServerInfo {
+  name: string;
+  type?: string;
+  command: string;
+  args: string[];
+  source: "plugin" | "project";
+  pluginName?: string;
+}
+
+export interface CommandInfo {
+  name: string;
+  filename: string;
+  source: "global" | "plugin";
+  pluginName?: string;
+  preview: string;
+}
+
+export interface HookInfo {
+  event: string;
+  matcher?: string;
+  commands: string[];
+  pluginName: string;
+}
+
+export interface GlobalConfig {
+  plugins: PluginInfo[];
+  skills: SkillInfo[];
+  mcpServers: McpServerInfo[];
+  commands: CommandInfo[];
+  hooks: HookInfo[];
+}
