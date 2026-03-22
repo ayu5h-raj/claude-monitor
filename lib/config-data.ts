@@ -2,6 +2,8 @@ import fs from "fs/promises";
 import path from "path";
 import os from "os";
 import { TTLCache } from "./cache";
+import { getAllSessions } from "./claude-data";
+import { extractRepoName } from "./path-utils";
 import type {
   GlobalConfig,
   PluginInfo,
@@ -9,6 +11,9 @@ import type {
   McpServerInfo,
   CommandInfo,
   HookInfo,
+  RepoConfig,
+  RepoCommandInfo,
+  RepoSkillInfo,
 } from "./types";
 
 const CLAUDE_DIR = path.join(os.homedir(), ".claude");
@@ -166,6 +171,7 @@ async function readPluginSkills(
         source: "plugin",
         pluginName,
       };
+      skill.content = content;
       if (fm?.["allowed-tools"]) {
         skill.allowedTools = fm["allowed-tools"]
           .split(",")
@@ -198,6 +204,7 @@ async function readCommands(
           source,
           pluginName,
           preview,
+          content,
         });
       } catch {
         // Skip unreadable command files
@@ -250,6 +257,7 @@ async function readGlobalSkills(): Promise<SkillInfo[]> {
         description: fm?.description,
         source: "global",
       };
+      skill.content = content;
       if (fm?.["allowed-tools"]) {
         skill.allowedTools = fm["allowed-tools"]
           .split(",")
@@ -440,5 +448,152 @@ export async function getProjectConfig(
     } catch {
       return { mcpServers: [], hasClaudeMd: false };
     }
+  });
+}
+
+// ─── Repo-level config ──────────────────────────────────────────
+
+async function readFileSafe(filePath: string): Promise<string | null> {
+  try {
+    return await fs.readFile(filePath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+async function readRepoCommands(dir: string): Promise<RepoCommandInfo[]> {
+  try {
+    const files = await fs.readdir(dir);
+    const commands: RepoCommandInfo[] = [];
+    for (const file of files) {
+      if (!file.endsWith(".md")) continue;
+      try {
+        const content = await fs.readFile(path.join(dir, file), "utf-8");
+        commands.push({
+          name: file.replace(/\.md$/, ""),
+          filename: file,
+          content,
+        });
+      } catch { /* skip */ }
+    }
+    return commands;
+  } catch {
+    return [];
+  }
+}
+
+async function readRepoSkills(dir: string): Promise<RepoSkillInfo[]> {
+  try {
+    const entries = await fs.readdir(dir);
+    const skills: RepoSkillInfo[] = [];
+    for (const entry of entries) {
+      const entryPath = path.join(dir, entry);
+      const stat = await fs.stat(entryPath);
+      if (!stat.isDirectory()) continue;
+
+      let content: string | null = null;
+      for (const filename of ["SKILL.md", "CLAUDE.md"]) {
+        try {
+          content = await fs.readFile(path.join(entryPath, filename), "utf-8");
+          break;
+        } catch { /* try next */ }
+      }
+      if (!content) continue;
+
+      const fm = parseFrontmatter(content);
+      const skill: RepoSkillInfo = {
+        name: fm?.name || entry,
+        description: fm?.description,
+        content,
+      };
+      if (fm?.["allowed-tools"]) {
+        skill.allowedTools = fm["allowed-tools"].split(",").map((s: string) => s.trim());
+      }
+      skills.push(skill);
+    }
+    return skills;
+  } catch {
+    return [];
+  }
+}
+
+const repoConfigCache = new TTLCache<RepoConfig[]>(30_000);
+
+export async function getRepoConfigs(): Promise<RepoConfig[]> {
+  return repoConfigCache.getOrSet("repos", async () => {
+    const sessions = await getAllSessions();
+
+    // Deduplicate by projectPath
+    const repoMap = new Map<string, number>();
+    for (const s of sessions) {
+      repoMap.set(s.projectPath, (repoMap.get(s.projectPath) || 0) + 1);
+    }
+
+    const configs: RepoConfig[] = [];
+
+    for (const [repoPath, sessionCount] of repoMap) {
+      if (!path.isAbsolute(repoPath)) continue;
+      const claudeDir = path.join(repoPath, ".claude");
+
+      const [claudeMdContent, agentsMdContent, settingsLocal, settingsJson, commands, skills] =
+        await Promise.all([
+          readFileSafe(path.join(repoPath, "CLAUDE.md")),
+          readFileSafe(path.join(repoPath, "AGENTS.md")),
+          readJsonSafe<{ permissions?: { allow?: string[]; deny?: string[] } }>(
+            path.join(claudeDir, "settings.local.json")
+          ),
+          readJsonSafe<{ hooks?: Record<string, unknown> }>(
+            path.join(claudeDir, "settings.json")
+          ),
+          readRepoCommands(path.join(claudeDir, "commands")),
+          readRepoSkills(path.join(claudeDir, "skills")),
+        ]);
+
+      const hasConfig = claudeMdContent || agentsMdContent || settingsLocal ||
+                        settingsJson || commands.length > 0 || skills.length > 0;
+      if (!hasConfig) continue;
+
+      // Parse hooks from settings.json if present
+      let hooks: HookInfo[] | undefined;
+      if (settingsJson?.hooks) {
+        hooks = [];
+        const hooksObj = settingsJson.hooks as Record<string, unknown>;
+        for (const [event, entries] of Object.entries(hooksObj)) {
+          for (const entry of entries as Array<Record<string, unknown>>) {
+            const cmds = ((entry.hooks as Array<Record<string, string>>) || [])
+              .map((h) => h.command)
+              .filter(Boolean);
+            if (cmds.length > 0) {
+              hooks.push({
+                event,
+                matcher: (entry.matcher as string) || undefined,
+                commands: cmds,
+              });
+            }
+          }
+        }
+        if (hooks.length === 0) hooks = undefined;
+      }
+
+      configs.push({
+        repoPath,
+        repoName: extractRepoName(repoPath),
+        claudeMdContent: claudeMdContent || undefined,
+        agentsMdContent: agentsMdContent || undefined,
+        permissions: settingsLocal?.permissions
+          ? {
+              allow: settingsLocal.permissions.allow || [],
+              deny: settingsLocal.permissions.deny,
+            }
+          : undefined,
+        hooks,
+        commands,
+        skills,
+        sessionCount,
+      });
+    }
+
+    configs.sort((a, b) => b.sessionCount - a.sessionCount);
+    return configs;
   });
 }

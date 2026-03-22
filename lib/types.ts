@@ -168,6 +168,7 @@ export interface SkillInfo {
   source: "global" | "plugin";
   pluginName?: string;
   allowedTools?: string[];
+  content?: string;
 }
 
 export interface McpServerInfo {
@@ -185,13 +186,14 @@ export interface CommandInfo {
   source: "global" | "plugin";
   pluginName?: string;
   preview: string;
+  content?: string;
 }
 
 export interface HookInfo {
   event: string;
   matcher?: string;
   commands: string[];
-  pluginName: string;
+  pluginName?: string;
 }
 
 export interface GlobalConfig {
@@ -200,4 +202,29 @@ export interface GlobalConfig {
   mcpServers: McpServerInfo[];
   commands: CommandInfo[];
   hooks: HookInfo[];
+}
+
+export interface RepoConfig {
+  repoPath: string;
+  repoName: string;
+  claudeMdContent?: string;
+  agentsMdContent?: string;
+  permissions?: { allow: string[]; deny?: string[] };
+  hooks?: HookInfo[];
+  commands: RepoCommandInfo[];
+  skills: RepoSkillInfo[];
+  sessionCount: number;
+}
+
+export interface RepoCommandInfo {
+  name: string;
+  filename: string;
+  content: string;
+}
+
+export interface RepoSkillInfo {
+  name: string;
+  description?: string;
+  content: string;
+  allowedTools?: string[];
 }
