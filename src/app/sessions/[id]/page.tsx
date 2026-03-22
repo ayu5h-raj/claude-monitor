@@ -9,6 +9,7 @@ import { SessionNotes } from "@/src/components/session-notes";
 import { QuickActions } from "@/src/components/quick-actions";
 import { addTagAction } from "@/src/app/actions/metadata";
 import { formatTokenCount, formatDuration } from "@/lib/path-utils";
+import { getGlobalConfig, getProjectConfig } from "@/lib/config-data";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,17 @@ export default async function SessionDetailPage({
   if (!result) notFound();
   const { session, entries } = result;
   const metadata = await getSessionMetadata(session.id);
+  const [globalConfig, projectConfig] = await Promise.all([
+    getGlobalConfig(),
+    getProjectConfig(session.projectPath),
+  ]);
+
+  const totalPlugins = globalConfig.plugins.length;
+  const totalSkills =
+    globalConfig.skills.length +
+    globalConfig.plugins.reduce((sum, p) => sum + p.skills.length, 0);
+  const totalMcpServers =
+    globalConfig.mcpServers.length + projectConfig.mcpServers.length;
   const returnUrl = `/sessions/${session.id}`;
 
   const totalTokens =
@@ -305,6 +317,113 @@ export default async function SessionDetailPage({
           </div>
         </div>
       )}
+
+      {/* Available Configuration */}
+      <details
+        style={{
+          marginBottom: "24px",
+          background: "var(--bg-tertiary)",
+          border: "1px solid var(--border)",
+          borderRadius: "4px",
+        }}
+      >
+        <summary
+          style={{
+            padding: "12px",
+            cursor: "pointer",
+            color: "var(--text-muted)",
+            fontSize: "11px",
+            fontWeight: "bold",
+            letterSpacing: "0.08em",
+          }}
+        >
+          CONFIGURATION ({totalPlugins} plugins, {totalSkills} skills,{" "}
+          {totalMcpServers} MCP servers)
+        </summary>
+        <div
+          style={{
+            padding: "0 12px 12px",
+            fontSize: "12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          {/* Plugins */}
+          {globalConfig.plugins.length > 0 && (
+            <div>
+              <span style={{ color: "var(--text-muted)" }}>plugins: </span>
+              <span style={{ color: "var(--green)" }}>
+                {globalConfig.plugins
+                  .map((p) => `${p.name}${p.enabled ? "" : " (disabled)"}`)
+                  .join(", ")}
+              </span>
+            </div>
+          )}
+
+          {/* Skills */}
+          {totalSkills > 0 && (
+            <div>
+              <span style={{ color: "var(--text-muted)" }}>skills: </span>
+              <span style={{ color: "var(--blue)" }}>
+                {[
+                  ...globalConfig.skills.map((s) => s.name),
+                  ...globalConfig.plugins.flatMap((p) =>
+                    p.skills.map((s) => s.name)
+                  ),
+                ].join(", ")}
+              </span>
+            </div>
+          )}
+
+          {/* MCP Servers */}
+          {totalMcpServers > 0 && (
+            <div>
+              <span style={{ color: "var(--text-muted)" }}>mcp servers: </span>
+              <span style={{ color: "var(--amber)" }}>
+                {[
+                  ...globalConfig.mcpServers.map((s) => s.name),
+                  ...projectConfig.mcpServers.map((s) => `${s.name} (project)`),
+                ].join(", ")}
+              </span>
+            </div>
+          )}
+
+          {/* Project-level config */}
+          {(projectConfig.hasClaudeMd || projectConfig.mcpServers.length > 0) && (
+            <div style={{ borderTop: "1px solid var(--border-light)", paddingTop: "8px", marginTop: "4px" }}>
+              <span style={{ color: "var(--text-muted)" }}>project config: </span>
+              {projectConfig.hasClaudeMd && (
+                <span
+                  style={{
+                    fontSize: "10px",
+                    padding: "1px 6px",
+                    borderRadius: "3px",
+                    background: "var(--bg-secondary)",
+                    color: "var(--green)",
+                    marginRight: "4px",
+                  }}
+                >
+                  CLAUDE.md
+                </span>
+              )}
+              {projectConfig.mcpServers.length > 0 && (
+                <span
+                  style={{
+                    fontSize: "10px",
+                    padding: "1px 6px",
+                    borderRadius: "3px",
+                    background: "var(--bg-secondary)",
+                    color: "var(--amber)",
+                  }}
+                >
+                  .mcp.json
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </details>
 
       {/* Conversation entries */}
       <div>
