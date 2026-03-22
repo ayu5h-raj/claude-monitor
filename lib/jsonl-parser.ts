@@ -188,6 +188,7 @@ export function extractSessionMetadata(
   let branch = "unknown";
   let model = "unknown";
   const tokenUsage: TokenUsage = { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 };
+  let contextSize = 0;
   let messageCount = 0;
   let toolCallCount = 0;
   const filesChanged = extractFilesChanged(rawEntries);
@@ -229,6 +230,9 @@ export function extractSessionMetadata(
         tokenUsage.output += usage.output_tokens || 0;
         tokenUsage.cacheRead += usage.cache_read_input_tokens || 0;
         tokenUsage.cacheCreation += usage.cache_creation_input_tokens || 0;
+        if (usage.input_tokens) {
+          contextSize = usage.input_tokens;
+        }
       }
 
       if (Array.isArray(raw.message.content)) {
@@ -256,6 +260,7 @@ export function extractSessionMetadata(
     messageCount,
     toolCallCount,
     tokenUsage,
+    contextSize,
     model,
     filesChanged,
     toolStats,

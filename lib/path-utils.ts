@@ -40,3 +40,19 @@ export function formatDuration(ms: number): string {
   if (minutes > 0) return `${minutes}m`;
   return `${seconds}s`;
 }
+
+const MODEL_CONTEXT_LIMITS: Record<string, number> = {
+  "claude-opus-4-6": 200_000,
+  "claude-sonnet-4-6": 200_000,
+  "claude-haiku-4-5": 200_000,
+};
+const DEFAULT_CONTEXT_LIMIT = 200_000;
+
+export function getModelContextLimit(model: string): number {
+  if (model.includes("[1m]")) return 1_000_000;
+  if (MODEL_CONTEXT_LIMITS[model]) return MODEL_CONTEXT_LIMITS[model];
+  for (const [key, limit] of Object.entries(MODEL_CONTEXT_LIMITS)) {
+    if (model.startsWith(key)) return limit;
+  }
+  return DEFAULT_CONTEXT_LIMIT;
+}

@@ -101,6 +101,21 @@ describe("extractSessionMetadata", () => {
     const meta = extractSessionMetadata(raw, "sess-001");
     expect(meta.lastActiveAt).toEqual(new Date("2026-03-20T10:00:20.000Z"));
   });
+
+  it("extracts contextSize from last assistant message input_tokens", () => {
+    const raw = parseJSONLContent(fixtureContent);
+    const meta = extractSessionMetadata(raw, "sess-001");
+    // Fixture has two assistant messages: input_tokens 1000, then 1500
+    expect(meta.contextSize).toBe(1500);
+  });
+
+  it("returns contextSize 0 when no assistant messages exist", () => {
+    const raw = parseJSONLContent(
+      '{"type":"user","message":{"role":"user","content":"hello"},"uuid":"u1","timestamp":"2026-03-20T10:00:00.000Z","cwd":"/x","sessionId":"s1","version":"2.1.81","gitBranch":"main"}'
+    );
+    const meta = extractSessionMetadata(raw, "s1");
+    expect(meta.contextSize).toBe(0);
+  });
 });
 
 describe("extractFilesChanged", () => {

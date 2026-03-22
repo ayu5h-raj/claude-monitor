@@ -1,6 +1,6 @@
 import { getSessionDetail } from "@/lib/claude-data";
 import { getSessionMetadata } from "@/lib/session-metadata";
-import { formatDuration, formatTokenCount } from "@/lib/path-utils";
+import { formatDuration, formatTokenCount, getModelContextLimit } from "@/lib/path-utils";
 
 export async function GET(
   _request: Request,
@@ -32,6 +32,12 @@ export async function GET(
   md += `**Duration:** ${duration}\n`;
   md += `**Model:** ${session.model}\n`;
   md += `**Tokens:** ${formatTokenCount(totalTokens)} (input: ${formatTokenCount(session.tokenUsage.input)}, output: ${formatTokenCount(session.tokenUsage.output)})\n`;
+
+  if (session.contextSize > 0) {
+    const contextLimit = getModelContextLimit(session.model);
+    const pct = contextLimit > 0 ? Math.round((session.contextSize / contextLimit) * 100) : 0;
+    md += `**Context:** ${formatTokenCount(session.contextSize)} / ${formatTokenCount(contextLimit)} (${pct}%)\n`;
+  }
 
   if (session.filesChanged.length > 0) {
     md += `**Files changed:** ${session.filesChanged.join(", ")}\n`;

@@ -18,6 +18,7 @@ export interface Session {
   messageCount: number;
   toolCallCount: number;
   tokenUsage: TokenUsage;
+  contextSize: number;
   model: string;
   status: "active" | "completed";
   filesChanged: string[];
