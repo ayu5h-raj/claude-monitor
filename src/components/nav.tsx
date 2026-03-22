@@ -8,7 +8,8 @@ export function Nav() {
   const isStats = pathname === "/stats";
   const isFiles = pathname === "/files";
   const isTools = pathname === "/tools";
-  const isSessions = !isStats && !isFiles && !isTools;
+  const isConfig = pathname === "/config";
+  const isSessions = !isStats && !isFiles && !isTools && !isConfig;
 
   return (
     <nav
@@ -76,6 +77,17 @@ export function Nav() {
             }}
           >
             Tools
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>]</span>
+        </Link>
+        <Link href="/config">
+          <span style={{ color: "var(--text-muted)" }}>[</span>
+          <span
+            style={{
+              color: isConfig ? "var(--green)" : "var(--text-secondary)",
+            }}
+          >
+            Config
           </span>
           <span style={{ color: "var(--text-muted)" }}>]</span>
         </Link>
