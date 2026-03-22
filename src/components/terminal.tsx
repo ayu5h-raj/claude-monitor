@@ -10,12 +10,15 @@ interface TerminalProps {
 
 export default function Terminal({ sessionId, cwd }: TerminalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected" | "exited">("connecting");
   const [exitCode, setExitCode] = useState<number | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!mounted || !containerRef.current) return;
 
     let ws: WebSocket | null = null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,7 +157,7 @@ export default function Terminal({ sessionId, cwd }: TerminalProps) {
     return () => {
       cleanupRef.current?.();
     };
-  }, [sessionId, cwd]);
+  }, [sessionId, cwd, mounted]);
 
   const statusColor = {
     connecting: "var(--amber)",
@@ -163,55 +166,42 @@ export default function Terminal({ sessionId, cwd }: TerminalProps) {
     exited: "var(--text-muted)",
   }[status];
 
-  const statusLabel = {
-    connecting: "connecting...",
-    connected: "CONNECTED",
-    disconnected: "DISCONNECTED",
-    exited: `exited (${exitCode})`,
-  }[status];
+  // Update the dock summary status dot
+  useEffect(() => {
+    const dot = document.getElementById("terminal-status-dot");
+    if (dot) {
+      dot.style.background = statusColor || "var(--text-muted)";
+      dot.style.boxShadow = status === "connected" ? `0 0 4px var(--green)` : "none";
+      if (status === "connected") {
+        dot.classList.add("live-dot");
+      } else {
+        dot.classList.remove("live-dot");
+      }
+    }
+  }, [status, statusColor]);
+
+  if (!mounted) {
+    return (
+      <div style={{ height: "100%", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "11px" }}>
+        loading terminal...
+      </div>
+    );
+  }
 
   return (
     <div
       style={{
-        marginBottom: "24px",
-        border: "1px solid var(--border)",
-        borderRadius: "4px",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
         overflow: "hidden",
       }}
     >
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "6px 12px",
-          background: "var(--bg-tertiary)",
-          borderBottom: "1px solid var(--border)",
-          fontSize: "11px",
-        }}
-      >
-        <span
-          className={status === "connected" ? "live-dot" : undefined}
-          style={{
-            display: "inline-block",
-            width: "6px",
-            height: "6px",
-            borderRadius: "50%",
-            background: statusColor,
-            boxShadow: status === "connected" ? `0 0 4px ${statusColor}` : "none",
-          }}
-        />
-        <span style={{ color: statusColor, letterSpacing: "0.05em", fontWeight: "bold" }}>
-          {statusLabel}
-        </span>
-        <span style={{ color: "var(--text-muted)" }}>
-          claude --resume {sessionId.slice(0, 8)}...
-        </span>
-      </div>
-      <div
         ref={containerRef}
         style={{
-          height: "350px",
+          flex: 1,
+          minHeight: 0,
           background: "#0a0a0a",
           padding: "4px",
         }}

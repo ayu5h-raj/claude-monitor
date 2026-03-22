@@ -199,6 +199,63 @@ export default function RootLayout({
     handle.addEventListener('mouseleave', function() { if (!dragging) handle.style.background = 'var(--border)'; });
   }
 
+  // ─── IDE resize handles (event delegation) ────────────
+  var ideDragState = { type: null, startX: 0, startY: 0, startSize: 0 };
+
+  document.addEventListener('mousedown', function(e) {
+    if (!e.target || !e.target.closest) return;
+
+    // Sidebar horizontal resize
+    var sidebarDrag = e.target.closest('#ide-sidebar-drag');
+    if (sidebarDrag) {
+      var sb = document.querySelector('.ide-sidebar');
+      if (sb) {
+        ideDragState = { type: 'sidebar', startX: e.clientX, startY: 0, startSize: sb.offsetWidth };
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      }
+      return;
+    }
+
+    // Dock vertical resize
+    var dockDrag = e.target.closest('#ide-dock-drag');
+    if (dockDrag) {
+      var dc = document.getElementById('ide-dock-content');
+      if (dc) {
+        ideDragState = { type: 'dock', startX: 0, startY: e.clientY, startSize: dc.offsetHeight };
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      }
+      return;
+    }
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!ideDragState.type) return;
+    if (ideDragState.type === 'sidebar') {
+      var ideMain = document.querySelector('.ide-main');
+      if (ideMain) {
+        var w = Math.max(200, Math.min(ideDragState.startSize + e.clientX - ideDragState.startX, window.innerWidth * 0.45));
+        ideMain.style.gridTemplateColumns = w + 'px 5px 1fr';
+      }
+    } else if (ideDragState.type === 'dock') {
+      var dc = document.getElementById('ide-dock-content');
+      if (dc) {
+        var h = Math.max(150, Math.min(ideDragState.startSize - (e.clientY - ideDragState.startY), window.innerHeight * 0.7));
+        dc.style.height = h + 'px';
+      }
+    }
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!ideDragState.type) return;
+    ideDragState.type = null;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+
   // ─── Search form loading state ────────────────────────
   var searchForm = document.getElementById('search-form');
   var searchBtn = document.getElementById('search-btn');

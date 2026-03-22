@@ -14,44 +14,14 @@ export default function ConversationEntry({ entry }: { entry: EntryProp }) {
 
   if (entry.type === "user") {
     return (
-      <div
-        style={{
-          borderLeft: "2px solid var(--green)",
-          paddingLeft: "12px",
-          marginBottom: "16px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "6px",
-          }}
-        >
-          <span
-            style={{
-              color: "var(--green)",
-              fontWeight: "bold",
-              fontSize: "11px",
-              letterSpacing: "0.08em",
-            }}
-          >
+      <div className={`conv-entry conv-entry-user`}>
+        <div className="conv-entry-header">
+          <span className="conv-entry-type" style={{ color: "var(--green)" }}>
             USER
           </span>
-          <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
-            {timeStr}
-          </span>
+          <span className="conv-entry-time">{timeStr}</span>
         </div>
-        <div
-          style={{
-            color: "var(--text-primary)",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          }}
-        >
-          {entry.content}
-        </div>
+        <div className="conv-entry-content">{entry.content}</div>
       </div>
     );
   }
@@ -62,35 +32,12 @@ export default function ConversationEntry({ entry }: { entry: EntryProp }) {
       : 0;
 
     return (
-      <div
-        style={{
-          borderLeft: "2px solid var(--purple)",
-          paddingLeft: "12px",
-          marginBottom: "16px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "6px",
-            flexWrap: "wrap",
-          }}
-        >
-          <span
-            style={{
-              color: "var(--purple)",
-              fontWeight: "bold",
-              fontSize: "11px",
-              letterSpacing: "0.08em",
-            }}
-          >
+      <div className={`conv-entry conv-entry-assistant`}>
+        <div className="conv-entry-header">
+          <span className="conv-entry-type" style={{ color: "var(--purple)" }}>
             ASSISTANT
           </span>
-          <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
-            {timeStr}
-          </span>
+          <span className="conv-entry-time">{timeStr}</span>
           {entry.usage && totalTokens > 0 && (
             <span
               style={{
@@ -106,45 +53,16 @@ export default function ConversationEntry({ entry }: { entry: EntryProp }) {
             </span>
           )}
         </div>
-        <div
-          style={{
-            color: "var(--text-primary)",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          }}
-        >
-          {entry.content}
-        </div>
+        <div className="conv-entry-content">{entry.content}</div>
       </div>
     );
   }
 
   if (entry.type === "tool_use") {
     return (
-      <div
-        style={{
-          borderLeft: "2px solid var(--amber)",
-          paddingLeft: "12px",
-          marginBottom: "16px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "6px",
-            flexWrap: "wrap",
-          }}
-        >
-          <span
-            style={{
-              color: "var(--amber)",
-              fontWeight: "bold",
-              fontSize: "11px",
-              letterSpacing: "0.08em",
-            }}
-          >
+      <div className={`conv-entry conv-entry-tool_use`}>
+        <div className="conv-entry-header">
+          <span className="conv-entry-type" style={{ color: "var(--amber)" }}>
             TOOL
           </span>
           {entry.toolName && (
@@ -158,39 +76,12 @@ export default function ConversationEntry({ entry }: { entry: EntryProp }) {
               {entry.toolName}
             </span>
           )}
-          <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
-            {timeStr}
-          </span>
+          <span className="conv-entry-time">{timeStr}</span>
         </div>
         {entry.toolInput && (
           <details>
-            <summary
-              style={{
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                fontSize: "11px",
-                padding: "2px 0",
-                listStyle: "none",
-              }}
-            >
-              ▶ show input
-            </summary>
-            <pre
-              style={{
-                color: "var(--text-secondary)",
-                background: "var(--border-light)",
-                border: "1px solid var(--border)",
-                borderRadius: "3px",
-                padding: "8px",
-                margin: "4px 0 0",
-                fontSize: "11px",
-                overflowX: "auto",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}
-            >
-              {JSON.stringify(entry.toolInput, null, 2)}
-            </pre>
+            <summary>show input</summary>
+            <pre>{JSON.stringify(entry.toolInput, null, 2)}</pre>
           </details>
         )}
       </div>
@@ -202,80 +93,26 @@ export default function ConversationEntry({ entry }: { entry: EntryProp }) {
     const charCount = output ? output.length : 0;
 
     return (
-      <div
-        style={{
-          borderLeft: "2px solid var(--amber)",
-          paddingLeft: "12px",
-          marginBottom: "16px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "6px",
-            flexWrap: "wrap",
-          }}
-        >
-          <span
-            style={{
-              color: "var(--amber)",
-              fontWeight: "bold",
-              fontSize: "11px",
-              letterSpacing: "0.08em",
-            }}
-          >
+      <div className={`conv-entry conv-entry-tool_result`}>
+        <div className="conv-entry-header">
+          <span className="conv-entry-type" style={{ color: "var(--amber)" }}>
             RESULT
           </span>
-          <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
-            {timeStr}
-          </span>
+          <span className="conv-entry-time">{timeStr}</span>
           {entry.isError ? (
-            <span
-              style={{ color: "var(--red)", fontSize: "12px" }}
-              title="error"
-            >
-              ✗
+            <span style={{ color: "var(--red)", fontSize: "12px" }} title="error">
+              &#10007;
             </span>
           ) : (
-            <span
-              style={{ color: "var(--green)", fontSize: "12px" }}
-              title="success"
-            >
-              ✓
+            <span style={{ color: "var(--green)", fontSize: "12px" }} title="success">
+              &#10003;
             </span>
           )}
         </div>
         {output && (
           <details>
-            <summary
-              style={{
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                fontSize: "11px",
-                padding: "2px 0",
-                listStyle: "none",
-              }}
-            >
-              ▶ show output ({charCount} chars)
-            </summary>
-            <pre
-              style={{
-                color: "var(--text-secondary)",
-                background: "var(--border-light)",
-                border: "1px solid var(--border)",
-                borderRadius: "3px",
-                padding: "8px",
-                margin: "4px 0 0",
-                fontSize: "11px",
-                overflowX: "auto",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}
-            >
-              {output}
-            </pre>
+            <summary>show output ({charCount} chars)</summary>
+            <pre>{output}</pre>
           </details>
         )}
       </div>
