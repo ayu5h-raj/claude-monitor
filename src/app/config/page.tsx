@@ -438,14 +438,32 @@ export default async function ConfigPage() {
               >
                 {repo.repoPath}
               </span>
+              {!repo.claudeMdContent && (
+                <span
+                  style={{
+                    fontSize: "10px",
+                    padding: "1px 6px",
+                    borderRadius: "3px",
+                    background: "rgba(204, 136, 0, 0.15)",
+                    color: "#cc8800",
+                    flexShrink: 0,
+                  }}
+                >
+                  ! no CLAUDE.md
+                </span>
+              )}
               <span
                 style={{
                   fontSize: "10px",
                   color: "var(--text-muted)",
                   flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
                 }}
               >
-                {repo.sessionCount} sessions
+                <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>&#9776;</span>
+                {repo.sessionCount}
               </span>
             </summary>
 
