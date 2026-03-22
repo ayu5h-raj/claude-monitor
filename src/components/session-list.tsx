@@ -15,6 +15,7 @@ interface SerializedSession {
   tokenUsage: { input: number; output: number; cacheRead: number; cacheCreation: number };
   model: string;
   status: "active" | "completed";
+  activeState?: "working" | "waiting" | "thinking" | "idle";
   filesChanged: string[];
   contextSize: number;
   firstMessage?: string;

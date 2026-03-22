@@ -7,6 +7,7 @@ import {
   extractSessionMetadata,
   extractFilesChanged,
   extractToolStats,
+  inferActiveState,
 } from "@/lib/jsonl-parser";
 
 const fixturePath = path.join(__dirname, "fixtures", "simple-session.jsonl");
@@ -165,5 +166,51 @@ describe("extractToolStats", () => {
     const stats = extractToolStats(rawWithError);
     expect(stats["Bash"].calls).toBe(1);
     expect(stats["Bash"].errors).toBe(1);
+  });
+});
+
+describe("inferActiveState", () => {
+  it("returns 'thinking' when last meaningful entry is user", () => {
+    const entries = [
+      { type: "assistant", timestamp: new Date().toISOString(), message: { role: "assistant", content: "hello" } },
+      { type: "user", timestamp: new Date().toISOString(), message: { role: "user", content: "do something" } },
+    ];
+    expect(inferActiveState(entries as any)).toBe("thinking");
+  });
+
+  it("returns 'waiting' when last meaningful entry is assistant with text", () => {
+    const entries = [
+      { type: "user", timestamp: new Date().toISOString(), message: { role: "user", content: "hi" } },
+      { type: "assistant", timestamp: new Date().toISOString(), message: { role: "assistant", content: "Hello! How can I help?" } },
+    ];
+    expect(inferActiveState(entries as any)).toBe("waiting");
+  });
+
+  it("returns 'working' when last assistant entry has tool_use blocks", () => {
+    const entries = [
+      { type: "user", timestamp: new Date().toISOString(), message: { role: "user", content: "read file" } },
+      { type: "assistant", timestamp: new Date().toISOString(), message: { role: "assistant", content: [{ type: "text", text: "Let me read that" }, { type: "tool_use", name: "Read", input: {} }] } },
+    ];
+    expect(inferActiveState(entries as any)).toBe("working");
+  });
+
+  it("returns 'idle' when last entry is older than 5 minutes", () => {
+    const oldTime = new Date(Date.now() - 6 * 60 * 1000).toISOString();
+    const entries = [
+      { type: "assistant", timestamp: oldTime, message: { role: "assistant", content: "done" } },
+    ];
+    expect(inferActiveState(entries as any)).toBe("idle");
+  });
+
+  it("returns 'idle' for empty entries", () => {
+    expect(inferActiveState([])).toBe("idle");
+  });
+
+  it("skips progress entries to find meaningful ones", () => {
+    const entries = [
+      { type: "user", timestamp: new Date().toISOString(), message: { role: "user", content: "hi" } },
+      { type: "progress", timestamp: new Date().toISOString(), data: { type: "hook_progress" } },
+    ];
+    expect(inferActiveState(entries as any)).toBe("thinking");
   });
 });

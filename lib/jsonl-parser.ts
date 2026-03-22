@@ -157,6 +157,48 @@ export function extractToolStats(
   return stats;
 }
 
+export function inferActiveState(rawEntries: RawJSONLEntry[]): "working" | "waiting" | "thinking" | "idle" {
+  // Check timestamp of last entry for idle detection (>5 min)
+  const lastEntry = rawEntries[rawEntries.length - 1];
+  if (lastEntry?.timestamp) {
+    const lastTime = new Date(lastEntry.timestamp).getTime();
+    if (Date.now() - lastTime > 5 * 60 * 1000) {
+      return "idle";
+    }
+  }
+
+  // Walk backwards to find last meaningful entry
+  for (let i = rawEntries.length - 1; i >= 0; i--) {
+    const entry = rawEntries[i];
+    const type = entry.type;
+
+    // Skip non-meaningful entries
+    if (type === "progress" || type === "file-history-snapshot" || type === "system") {
+      continue;
+    }
+
+    if (type === "user") {
+      return "thinking"; // User sent message, Claude is processing
+    }
+
+    if (type === "assistant") {
+      // Check if the assistant message contains tool_use blocks
+      const content = entry.message?.content;
+      if (Array.isArray(content)) {
+        const hasToolUse = content.some(
+          (block: RawContentBlock) => block.type === "tool_use"
+        );
+        if (hasToolUse) {
+          return "working"; // Claude is executing tools
+        }
+      }
+      return "waiting"; // Claude responded with text, waiting for user
+    }
+  }
+
+  return "idle";
+}
+
 export function extractFilesChanged(rawEntries: RawJSONLEntry[]): string[] {
   const files = new Set<string>();
 

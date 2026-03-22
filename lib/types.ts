@@ -21,6 +21,7 @@ export interface Session {
   contextSize: number;
   model: string;
   status: "active" | "completed";
+  activeState?: "working" | "waiting" | "thinking" | "idle";
   filesChanged: string[];
   toolStats: Record<string, { calls: number; errors: number }>;
   firstMessage?: string;

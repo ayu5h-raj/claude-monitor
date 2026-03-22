@@ -10,6 +10,7 @@ interface SessionRowProps {
     projectPath: string;
     branch: string;
     status: "active" | "completed";
+    activeState?: "working" | "waiting" | "thinking" | "idle";
     lastActiveAt: string;
     toolCallCount: number;
     tokenUsage: { input: number; output: number; cacheRead: number; cacheCreation: number };
@@ -57,6 +58,23 @@ export default function SessionRow({
     session.tokenUsage.cacheRead +
     session.tokenUsage.cacheCreation;
 
+  // Determine dot styling based on activeState
+  const dotColor = session.status === "active"
+    ? session.activeState === "working" ? "var(--blue)"
+    : session.activeState === "thinking" ? "var(--green)"
+    : session.activeState === "waiting" ? "var(--amber)"
+    : "#336644" // idle: dim green
+    : "var(--text-muted)"; // completed
+
+  const dotGlow = session.status === "active" &&
+    (session.activeState === "working" || session.activeState === "thinking")
+    ? `0 0 4px ${dotColor}`
+    : "none";
+
+  const dotTitle = session.status === "active"
+    ? session.activeState || "active"
+    : "completed";
+
   return (
     <Link
       href={`/sessions/${session.id}`}
@@ -72,19 +90,14 @@ export default function SessionRow({
       }}
     >
       <span
+        title={dotTitle}
         style={{
           display: "inline-block",
           width: "8px",
           height: "8px",
           borderRadius: "50%",
-          background:
-            session.status === "active"
-              ? "var(--green)"
-              : "var(--text-muted)",
-          boxShadow:
-            session.status === "active"
-              ? "0 0 4px var(--green)"
-              : "none",
+          background: dotColor,
+          boxShadow: dotGlow,
         }}
       />
       <span

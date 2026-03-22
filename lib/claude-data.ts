@@ -5,6 +5,7 @@ import {
   parseJSONLContent,
   mapRawEntriesToSessionEntries,
   extractSessionMetadata,
+  inferActiveState,
 } from "./jsonl-parser";
 import { TTLCache } from "./cache";
 import type {
@@ -81,8 +82,9 @@ export async function getAllSessions(): Promise<Session[]> {
           // Skip sessions with no cwd (e.g., file-history-snapshot-only files)
           if (!meta.projectPath) continue;
           const status = activeSessions.has(sessionId) ? "active" : "completed";
+          const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
 
-          sessions.push({ ...meta, status });
+          sessions.push({ ...meta, status, activeState });
         } catch {
           // Skip unreadable files
         }
@@ -119,7 +121,8 @@ export async function getSessionDetail(
           const activeSessions = await getActiveSessions();
           const meta = extractSessionMetadata(rawEntries, sessionId);
           const status = activeSessions.has(sessionId) ? "active" : "completed";
-          return { session: { ...meta, status }, entries: cached.entries };
+          const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
+          return { session: { ...meta, status, activeState }, entries: cached.entries };
         }
 
         const content = await fs.readFile(filePath, "utf-8");
@@ -128,10 +131,11 @@ export async function getSessionDetail(
         const meta = extractSessionMetadata(rawEntries, sessionId);
         const activeSessions = await getActiveSessions();
         const status = activeSessions.has(sessionId) ? "active" : "completed";
+        const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
 
         sessionDetailCache.set(sessionId, { entries, mtime });
 
-        return { session: { ...meta, status }, entries };
+        return { session: { ...meta, status, activeState }, entries };
       } catch {
         // File doesn't exist in this project dir, try next
       }

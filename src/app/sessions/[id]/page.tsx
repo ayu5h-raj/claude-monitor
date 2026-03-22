@@ -123,6 +123,23 @@ export default async function SessionDetailPage({
           >
             {session.id.slice(0, 8)}
           </span>
+          {session.status === "active" && session.activeState && (
+            <span style={{
+              fontSize: "10px",
+              padding: "1px 6px",
+              borderRadius: "3px",
+              background: session.activeState === "working" ? "rgba(0,100,255,0.15)"
+                : session.activeState === "thinking" ? "rgba(0,255,65,0.15)"
+                : session.activeState === "waiting" ? "rgba(255,170,0,0.15)"
+                : "rgba(100,100,100,0.15)",
+              color: session.activeState === "working" ? "var(--blue)"
+                : session.activeState === "thinking" ? "var(--green)"
+                : session.activeState === "waiting" ? "var(--amber)"
+                : "var(--text-muted)",
+            }}>
+              {session.activeState}
+            </span>
+          )}
           <span
             id="resume-copy-btn"
             data-cmd={`cd "${session.projectPath}" && claude --resume ${session.id}`}
