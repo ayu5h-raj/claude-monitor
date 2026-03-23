@@ -153,7 +153,7 @@ export async function getSessionDetail(
             const meta = extractSessionMetadata(rawEntries, sessionId);
             const activeList = activeSessions.get(meta.projectPath);
             const earliestStart = activeList?.length ? Math.min(...activeList.map(s => s.startedAt)) : Infinity;
-            const status = (activeList?.length && stat.mtimeMs >= earliestStart) ? "active" : "completed";
+            const status: "active" | "completed" = (activeList?.length && stat.mtimeMs >= earliestStart) ? "active" : "completed";
             const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
             const codeImpact = extractCodeImpact(rawEntries);
             return { session: { ...meta, status, activeState }, entries: cached.entries, codeImpact };
@@ -164,8 +164,8 @@ export async function getSessionDetail(
           const entries = mapRawEntriesToSessionEntries(rawEntries);
           const meta = extractSessionMetadata(rawEntries, sessionId);
           const activeSessions = await getActiveSessions();
-          const activeSession = activeSessions.get(meta.projectPath);
-          const status = (activeSession && stat.mtimeMs >= activeSession.startedAt) ? "active" : "completed";
+          const activeSessArr = activeSessions.get(meta.projectPath);
+          const status: "active" | "completed" = (activeSessArr && activeSessArr.some(s => stat.mtimeMs >= s.startedAt)) ? "active" : "completed";
           const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
 
           sessionDetailCache.set(sessionId, { entries, mtime });
