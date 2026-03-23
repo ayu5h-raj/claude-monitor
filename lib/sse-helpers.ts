@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { PROJECTS_DIR, SESSIONS_DIR } from "./claude-data";
+import { PROJECTS_DIR, getActiveSessions } from "./claude-data";
 
 export function getNewLines(content: string, baselineCount: number): string[] {
   const lines = content.split("\n").filter((l) => l.trim());
@@ -10,21 +10,20 @@ export function getNewLines(content: string, baselineCount: number): string[] {
 
 export async function isSessionActive(sessionId: string): Promise<boolean> {
   try {
-    const files = await fs.readdir(SESSIONS_DIR);
-    for (const file of files) {
-      if (!file.endsWith(".json")) continue;
-      try {
-        const content = await fs.readFile(path.join(SESSIONS_DIR, file), "utf-8");
-        const data = JSON.parse(content);
-        if (data.sessionId === sessionId) return true;
-      } catch {
-        // Skip unreadable files
-      }
-    }
+    const filePath = await findSessionFile(sessionId);
+    if (!filePath) return false;
+    const fileStat = await fs.stat(filePath);
+    // Read first line to extract cwd
+    const content = await fs.readFile(filePath, "utf-8");
+    const firstLine = content.slice(0, content.indexOf("\n") || content.length);
+    const entry = JSON.parse(firstLine);
+    if (!entry.cwd) return false;
+    const activeSessions = await getActiveSessions();
+    const active = activeSessions.get(entry.cwd);
+    return !!(active && fileStat.mtimeMs >= active.startedAt);
   } catch {
-    // Sessions dir may not exist
+    return false;
   }
-  return false;
 }
 
 export async function findSessionFile(sessionId: string): Promise<string | null> {

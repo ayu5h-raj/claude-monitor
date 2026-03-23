@@ -34,7 +34,8 @@ const sessionDetailCache = new TTLCache<{
 // Deduplication map for concurrent getSessionDetail calls
 const inFlightDetailRequests = new Map<string, Promise<{ session: Session; entries: SessionEntry[]; codeImpact: CodeImpact } | null>>();
 
-async function getActiveSessions(): Promise<Map<string, ActiveSession>> {
+// Returns active sessions keyed by cwd (project path), with PID liveness validation
+export async function getActiveSessions(): Promise<Map<string, ActiveSession>> {
   const map = new Map<string, ActiveSession>();
   try {
     const files = await fs.readdir(SESSIONS_DIR);
@@ -46,7 +47,17 @@ async function getActiveSessions(): Promise<Map<string, ActiveSession>> {
           "utf-8"
         );
         const session: ActiveSession = JSON.parse(content);
-        map.set(session.sessionId, session);
+        // Validate PID is alive
+        try {
+          process.kill(session.pid, 0);
+        } catch {
+          continue; // Process is dead, skip
+        }
+        // Key by cwd, keep latest startedAt
+        const existing = map.get(session.cwd);
+        if (!existing || session.startedAt > existing.startedAt) {
+          map.set(session.cwd, session);
+        }
       } catch {
         // Skip unreadable session files
       }
@@ -64,13 +75,17 @@ export async function getAllSessions(): Promise<Session[]> {
   const sessions: Session[] = [];
   const activeSessions = await getActiveSessions();
 
+  // Track best active candidate per cwd (most recent mtime >= startedAt)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cwdBestCandidate = new Map<string, { index: number; mtime: number; rawEntries: any[] }>();
+
   try {
     const projectDirs = await fs.readdir(PROJECTS_DIR);
 
     for (const projectDir of projectDirs) {
       const projectPath = path.join(PROJECTS_DIR, projectDir);
-      const stat = await fs.stat(projectPath);
-      if (!stat.isDirectory()) continue;
+      const dirStat = await fs.stat(projectPath);
+      if (!dirStat.isDirectory()) continue;
 
       const files = await fs.readdir(projectPath);
       for (const file of files) {
@@ -86,10 +101,26 @@ export async function getAllSessions(): Promise<Session[]> {
           const meta = extractSessionMetadata(rawEntries, sessionId);
           // Skip sessions with no cwd (e.g., file-history-snapshot-only files)
           if (!meta.projectPath) continue;
-          const status = activeSessions.has(sessionId) ? "active" : "completed";
-          const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
 
-          sessions.push({ ...meta, status, activeState });
+          // Initially mark all as completed; fix up active ones below
+          sessions.push({ ...meta, status: "completed" });
+
+          // Check if this project has an active Claude process
+          const activeSession = activeSessions.get(meta.projectPath);
+          if (activeSession) {
+            const fileStat = await fs.stat(filePath);
+            if (fileStat.mtimeMs >= activeSession.startedAt) {
+              const sessionIndex = sessions.length - 1;
+              const existing = cwdBestCandidate.get(meta.projectPath);
+              if (!existing || fileStat.mtimeMs > existing.mtime) {
+                cwdBestCandidate.set(meta.projectPath, {
+                  index: sessionIndex,
+                  mtime: fileStat.mtimeMs,
+                  rawEntries,
+                });
+              }
+            }
+          }
         } catch {
           // Skip unreadable files
         }
@@ -97,6 +128,12 @@ export async function getAllSessions(): Promise<Session[]> {
     }
   } catch {
     // Projects dir may not exist — return empty
+  }
+
+  // Mark the best candidate per active cwd as active
+  for (const [, { index, rawEntries }] of cwdBestCandidate) {
+    sessions[index].status = "active";
+    sessions[index].activeState = inferActiveState(rawEntries);
   }
 
   sessions.sort((a, b) => b.lastActiveAt.getTime() - a.lastActiveAt.getTime());
@@ -130,7 +167,8 @@ export async function getSessionDetail(
             );
             const activeSessions = await getActiveSessions();
             const meta = extractSessionMetadata(rawEntries, sessionId);
-            const status = activeSessions.has(sessionId) ? "active" : "completed";
+            const activeSession = activeSessions.get(meta.projectPath);
+            const status = (activeSession && stat.mtimeMs >= activeSession.startedAt) ? "active" : "completed";
             const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
             const codeImpact = extractCodeImpact(rawEntries);
             return { session: { ...meta, status, activeState }, entries: cached.entries, codeImpact };
@@ -141,7 +179,8 @@ export async function getSessionDetail(
           const entries = mapRawEntriesToSessionEntries(rawEntries);
           const meta = extractSessionMetadata(rawEntries, sessionId);
           const activeSessions = await getActiveSessions();
-          const status = activeSessions.has(sessionId) ? "active" : "completed";
+          const activeSession = activeSessions.get(meta.projectPath);
+          const status = (activeSession && stat.mtimeMs >= activeSession.startedAt) ? "active" : "completed";
           const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
 
           sessionDetailCache.set(sessionId, { entries, mtime });
