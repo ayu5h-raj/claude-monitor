@@ -7,7 +7,7 @@ export default async function AsyncTerminalDock({ sessionId }: { sessionId: stri
   const { session } = result;
 
   return (
-    <details className="ide-dock">
+    <details className="ide-dock" suppressHydrationWarning>
       <summary>
         <span className="ide-dock-label">TERMINAL</span>
         <span
