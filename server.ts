@@ -48,40 +48,52 @@ app.prepare().then(() => {
       return;
     }
 
-    const sessionId = parsedUrl.query.sessionId as string;
+    const sessionId = parsedUrl.query.sessionId as string | undefined;
     const cwd = parsedUrl.query.cwd as string;
 
-    if (!sessionId || !cwd) {
+    if (!cwd) {
       socket.write("HTTP/1.1 400 Bad Request\r\n\r\n");
       socket.destroy();
       return;
     }
 
-    // Validate session ID format (UUID-like)
-    if (!/^[a-f0-9-]+$/i.test(sessionId)) {
+    // Validate cwd exists on disk
+    if (!fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) {
       socket.write("HTTP/1.1 400 Bad Request\r\n\r\n");
       socket.destroy();
       return;
     }
 
-    if (!sessionExists(sessionId)) {
-      socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
-      socket.destroy();
-      return;
+    // If sessionId provided, validate it
+    if (sessionId) {
+      if (!/^[a-f0-9-]+$/i.test(sessionId)) {
+        socket.write("HTTP/1.1 400 Bad Request\r\n\r\n");
+        socket.destroy();
+        return;
+      }
+
+      if (!sessionExists(sessionId)) {
+        socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+        socket.destroy();
+        return;
+      }
     }
 
     wss.handleUpgrade(req, socket, head, (ws) => {
-      wss.emit("connection", ws, req, { sessionId, cwd });
+      wss.emit("connection", ws, req, { sessionId: sessionId || null, cwd });
     });
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  wss.on("connection", (ws: WebSocket, _req: any, meta: { sessionId: string; cwd: string }) => {
+  wss.on("connection", (ws: WebSocket, _req: any, meta: { sessionId: string | null; cwd: string }) => {
     const shell = process.env.SHELL || "/bin/zsh";
     let ptyProcess: pty.IPty;
+    const claudeCmd = meta.sessionId
+      ? `claude --resume ${meta.sessionId}`
+      : "claude";
 
     try {
-      ptyProcess = pty.spawn(shell, ["-l", "-c", `claude --resume ${meta.sessionId}`], {
+      ptyProcess = pty.spawn(shell, ["-l", "-c", claudeCmd], {
         name: "xterm-256color",
         cols: 120,
         rows: 30,

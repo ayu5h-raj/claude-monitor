@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import "@xterm/xterm/css/xterm.css";
 
 interface TerminalProps {
-  sessionId: string;
+  sessionId?: string;
   cwd: string;
 }
 
@@ -77,7 +77,10 @@ export default function Terminal({ sessionId, cwd }: TerminalProps) {
 
         // Connect WebSocket
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `${protocol}//${window.location.host}/api/terminal?sessionId=${encodeURIComponent(sessionId)}&cwd=${encodeURIComponent(cwd)}`;
+        let wsUrl = `${protocol}//${window.location.host}/api/terminal?cwd=${encodeURIComponent(cwd)}`;
+        if (sessionId) {
+          wsUrl += `&sessionId=${encodeURIComponent(sessionId)}`;
+        }
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
