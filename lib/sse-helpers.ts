@@ -19,8 +19,10 @@ export async function isSessionActive(sessionId: string): Promise<boolean> {
     const entry = JSON.parse(firstLine);
     if (!entry.cwd) return false;
     const activeSessions = await getActiveSessions();
-    const active = activeSessions.get(entry.cwd);
-    return !!(active && fileStat.mtimeMs >= active.startedAt);
+    const activeList = activeSessions.get(entry.cwd);
+    if (!activeList?.length) return false;
+    const earliestStart = Math.min(...activeList.map(s => s.startedAt));
+    return fileStat.mtimeMs >= earliestStart;
   } catch {
     return false;
   }
