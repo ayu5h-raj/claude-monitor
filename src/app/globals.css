@@ -363,10 +363,93 @@ a {
 
 .conv-entry-content {
   color: var(--text-primary);
-  white-space: pre-wrap;
   word-break: break-word;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
+}
+
+/* Rendered markdown inside conversation entries */
+.conv-entry-content h1,
+.conv-entry-content h2,
+.conv-entry-content h3 {
+  color: var(--green);
+  margin: 8px 0 4px;
+  font-size: 14px;
+}
+.conv-entry-content strong { color: var(--text-primary); font-weight: bold; }
+.conv-entry-content em { color: var(--text-secondary); }
+.conv-entry-content code {
+  background: var(--bg-tertiary);
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 12px;
+}
+.conv-entry-content pre {
+  background: var(--border-light);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 4px 0;
+}
+.conv-entry-content pre code {
+  background: none;
+  padding: 0;
+}
+.conv-entry-content ul,
+.conv-entry-content ol {
+  padding-left: 20px;
+  margin: 4px 0;
+}
+.conv-entry-content li { margin: 2px 0; }
+.conv-entry-content a {
+  color: var(--green);
+  text-decoration: underline;
+}
+.conv-entry-content blockquote {
+  border-left: 2px solid var(--border);
+  padding-left: 8px;
+  color: var(--text-secondary);
+  margin: 4px 0;
+}
+.conv-entry-content p { margin: 4px 0; }
+.conv-entry-content table { border-collapse: collapse; margin: 4px 0; width: 100%; }
+.conv-entry-content th,
+.conv-entry-content td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  font-size: 12px;
+  text-align: left;
+}
+.conv-entry-content th { color: var(--text-secondary); background: var(--bg-secondary); }
+.conv-entry-content hr { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+
+/* XML collapsible blocks */
+.xml-block {
+  margin: 4px 0;
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+}
+.xml-block > summary {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-style: italic;
+  list-style: none;
+}
+.xml-block > summary::before { content: "▸ "; }
+.xml-block[open] > summary::before { content: "▾ "; }
+.xml-block > pre {
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--border-light);
+  font-size: 11px;
+  color: var(--text-secondary);
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 /* Tool input/result expand */

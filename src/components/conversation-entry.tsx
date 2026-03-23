@@ -1,5 +1,6 @@
 import type { SessionEntry } from "@/lib/types";
 import { formatTokenCount } from "@/lib/path-utils";
+import { renderMessageContent } from "@/src/components/message-renderer";
 
 type EntryProp = Omit<SessionEntry, "timestamp"> & { timestamp: string | Date };
 
@@ -21,7 +22,7 @@ export default function ConversationEntry({ entry }: { entry: EntryProp }) {
           </span>
           <span className="conv-entry-time">{timeStr}</span>
         </div>
-        <div className="conv-entry-content">{entry.content}</div>
+        <div className="conv-entry-content" dangerouslySetInnerHTML={{ __html: renderMessageContent(entry.content) }} />
       </div>
     );
   }
@@ -53,7 +54,7 @@ export default function ConversationEntry({ entry }: { entry: EntryProp }) {
             </span>
           )}
         </div>
-        <div className="conv-entry-content">{entry.content}</div>
+        <div className="conv-entry-content" dangerouslySetInnerHTML={{ __html: renderMessageContent(entry.content) }} />
       </div>
     );
   }
