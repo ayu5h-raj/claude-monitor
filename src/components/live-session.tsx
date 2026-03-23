@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import type { SerializedSessionEntry, TokenUsage } from "@/lib/types";
+import { renderMessageContent } from "@/src/components/message-renderer";
 
 interface LiveSessionProps {
   sessionId: string;
@@ -54,9 +55,8 @@ function EntryView({ entry }: { entry: SerializedSessionEntry }) {
           </span>
           <span style={{ color: "var(--text-muted)", fontSize: "10px" }}>{timeStr}</span>
         </div>
-        <div style={{ color: "var(--text-primary)", fontSize: "12px", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-          {entry.content}
-        </div>
+        <div className="conv-entry-content" style={{ fontSize: "12px" }}
+             dangerouslySetInnerHTML={{ __html: renderMessageContent(entry.content) }} />
       </div>
     );
   }
@@ -80,9 +80,8 @@ function EntryView({ entry }: { entry: SerializedSessionEntry }) {
             <span style={{ color: "var(--amber)", fontSize: "10px" }}>{tokenStr}</span>
           )}
         </div>
-        <div style={{ color: "var(--text-primary)", fontSize: "12px", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-          {entry.content}
-        </div>
+        <div className="conv-entry-content" style={{ fontSize: "12px" }}
+             dangerouslySetInnerHTML={{ __html: renderMessageContent(entry.content) }} />
       </div>
     );
   }
