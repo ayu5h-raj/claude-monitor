@@ -746,6 +746,29 @@ a {
   font-weight: bold;
 }
 
+/* New session dialog */
+dialog#new-session-dialog {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  padding: 0;
+  max-width: 480px;
+  width: 90vw;
+}
+dialog#new-session-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
+dialog#new-session-dialog a:hover {
+  border-color: var(--green) !important;
+  color: var(--green) !important;
+}
+dialog#new-session-dialog button[data-close-dialog]:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
 /* Subtle scanline effect on header */
 .ide-header::after {
   content: "";

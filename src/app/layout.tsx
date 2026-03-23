@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Script from "next/script";
 import { Nav } from "@/src/components/nav";
+import { NewSessionDialog } from "@/src/components/new-session-dialog";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -79,6 +81,23 @@ export default function RootLayout({
   // ─── Global event delegation ──────────────────────────
   document.addEventListener('click', function(e) {
     if (!e.target || !e.target.closest) return;
+
+    // Open new-session dialog
+    var openNew = e.target.closest('[data-open-new-session]');
+    if (openNew) {
+      e.preventDefault();
+      var dlg = document.getElementById('new-session-dialog');
+      if (dlg && dlg.showModal) dlg.showModal();
+      return;
+    }
+    // Close dialog
+    var closeDlg = e.target.closest('[data-close-dialog]');
+    if (closeDlg) {
+      e.preventDefault();
+      var pdlg = closeDlg.closest('dialog');
+      if (pdlg) pdlg.close();
+      return;
+    }
 
     // Copy resume button (session rows)
     var copyResume = e.target.closest('[data-copy-resume]');
@@ -300,6 +319,9 @@ export default function RootLayout({
 })();
         `}} />
         <Nav />
+        <Suspense fallback={null}>
+          <NewSessionDialog />
+        </Suspense>
         <main>{children}</main>
       </body>
     </html>
