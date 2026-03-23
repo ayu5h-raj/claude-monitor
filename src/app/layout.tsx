@@ -172,32 +172,51 @@ export default function RootLayout({
     if (qa) { qa.style.color = '#888'; qa.style.borderColor = '#333'; }
   }, true);
 
-  // ─── Sidebar resize handle ────────────────────────────
-  var handle = document.getElementById('sidebar-drag');
-  var sidebar = document.getElementById('sidebar');
-  if (handle && sidebar) {
-    var dragging = false, startX = 0, startW = 0;
-    handle.addEventListener('mousedown', function(e) {
-      dragging = true; startX = e.clientX; startW = sidebar.offsetWidth;
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-      e.preventDefault();
-    });
-    document.addEventListener('mousemove', function(e) {
-      if (!dragging) return;
-      var w = Math.max(180, Math.min(startW + e.clientX - startX, window.innerWidth * 0.5));
+  // ─── Sidebar resize handle (event delegation for Suspense compat) ────
+  var sidebarDragState = { dragging: false, startX: 0, startW: 0 };
+
+  document.addEventListener('mousedown', function(e) {
+    if (!e.target || !e.target.closest) return;
+    var dragHandle = e.target.closest('#sidebar-drag');
+    if (dragHandle) {
+      var sidebar = document.getElementById('sidebar');
+      if (sidebar) {
+        sidebarDragState = { dragging: true, startX: e.clientX, startW: sidebar.offsetWidth };
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      }
+    }
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!sidebarDragState.dragging) return;
+    var sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+      var w = Math.max(180, Math.min(sidebarDragState.startW + e.clientX - sidebarDragState.startX, window.innerWidth * 0.5));
       sidebar.style.width = w + 'px';
       sidebar.style.minWidth = w + 'px';
-    });
-    document.addEventListener('mouseup', function() {
-      if (!dragging) return;
-      dragging = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    });
-    handle.addEventListener('mouseenter', function() { handle.style.background = 'var(--green)'; });
-    handle.addEventListener('mouseleave', function() { if (!dragging) handle.style.background = 'var(--border)'; });
-  }
+    }
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!sidebarDragState.dragging) return;
+    sidebarDragState.dragging = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+
+  document.addEventListener('mouseenter', function(e) {
+    if (!e.target || !e.target.closest) return;
+    var dragHandle = e.target.closest('#sidebar-drag');
+    if (dragHandle) dragHandle.style.background = 'var(--green)';
+  }, true);
+
+  document.addEventListener('mouseleave', function(e) {
+    if (!e.target || !e.target.closest) return;
+    var dragHandle = e.target.closest('#sidebar-drag');
+    if (dragHandle && !sidebarDragState.dragging) dragHandle.style.background = 'var(--border)';
+  }, true);
 
   // ─── IDE resize handles (event delegation) ────────────
   var ideDragState = { type: null, startX: 0, startY: 0, startSize: 0 };
