@@ -1,9 +1,9 @@
 import { getSessionDetail } from "@/lib/claude-data";
 import type { SessionEntry } from "@/lib/types";
 
-const PR_URL_RE = /https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/g;
+export const PR_URL_RE = /https?:\/\/[^/\s]+\/[^/\s]+\/[^/\s]+\/pull\/\d+/g;
 
-function extractPRs(entries: SessionEntry[]): string[] {
+export function extractPRs(entries: SessionEntry[]): string[] {
   const urls = new Set<string>();
   for (const entry of entries) {
     if (entry.toolResult) {
@@ -18,7 +18,7 @@ function extractPRs(entries: SessionEntry[]): string[] {
   return Array.from(urls);
 }
 
-function parsePRUrl(url: string) {
+export function parsePRUrl(url: string) {
   const parts = url.split("/");
   const number = parts[parts.length - 1];
   const repo = `${parts[parts.length - 4]}/${parts[parts.length - 3]}`;
