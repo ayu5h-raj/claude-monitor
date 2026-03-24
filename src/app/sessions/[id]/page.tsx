@@ -6,19 +6,30 @@ import { IdeSidebarPlaceholder, ConversationPlaceholder, DockPlaceholder } from 
 import { BookmarkButton } from "@/src/components/bookmark-button";
 import AsyncIdeSidebar from "@/src/components/async-ide-sidebar";
 import AsyncConversation from "@/src/components/async-conversation";
+import AsyncDiffViewer from "@/src/components/async-diff-viewer";
+import AsyncCommitLinks from "@/src/components/async-commit-links";
 import AsyncTerminalDock from "@/src/components/async-terminal-dock";
 
 export const dynamic = "force-dynamic";
+
+const TABS = [
+  { key: "conversation", label: "Conversation" },
+  { key: "diff", label: "Diff" },
+  { key: "commits", label: "Commits" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
 
 export default async function SessionDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; tab?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, tab } = await searchParams;
+  const activeTab: TabKey = (TABS.some(t => t.key === tab) ? tab : "conversation") as TabKey;
 
   const result = await getSessionDetail(id);
   if (!result) notFound();
@@ -113,6 +124,24 @@ export default async function SessionDetailPage({
         <div className="ide-header-glow" />
       </div>
 
+      {/* Tab bar */}
+      <div className="ide-tab-bar">
+        {TABS.map(({ key, label }) => (
+          <Link
+            key={key}
+            href={`/sessions/${id}?tab=${key}`}
+            style={{
+              color: activeTab === key ? "var(--green)" : "var(--text-muted)",
+              fontSize: "12px",
+              padding: "6px 12px",
+              borderBottom: activeTab === key ? "2px solid var(--green)" : "2px solid transparent",
+            }}
+          >
+            [{label}]
+          </Link>
+        ))}
+      </div>
+
       {/* Main area -- independent Suspense zones, keyed by id */}
       <div className="ide-main">
         <Suspense fallback={<IdeSidebarPlaceholder />} key={`sidebar-${id}`}>
@@ -121,9 +150,21 @@ export default async function SessionDetailPage({
 
         <div id="ide-sidebar-drag" className="ide-sidebar-drag">{" "}</div>
 
-        <Suspense fallback={<ConversationPlaceholder />} key={`conv-${id}`}>
-          <AsyncConversation sessionId={id} />
-        </Suspense>
+        {activeTab === "conversation" && (
+          <Suspense fallback={<ConversationPlaceholder />} key={`conv-${id}`}>
+            <AsyncConversation sessionId={id} />
+          </Suspense>
+        )}
+        {activeTab === "diff" && (
+          <Suspense fallback={<ConversationPlaceholder />} key={`diff-${id}`}>
+            <AsyncDiffViewer sessionId={id} />
+          </Suspense>
+        )}
+        {activeTab === "commits" && (
+          <Suspense fallback={<ConversationPlaceholder />} key={`commits-${id}`}>
+            <AsyncCommitLinks sessionId={id} />
+          </Suspense>
+        )}
       </div>
 
       {/* Terminal dock */}

@@ -199,6 +199,17 @@ export interface SerializedSessionEntry {
   uuid: string;
 }
 
+export interface SessionCommit {
+  hash: string;
+  shortHash: string;
+  subject: string;
+  date: string;
+  author: string;
+  filesChanged: number;
+  insertions: number;
+  deletions: number;
+}
+
 export interface SSEMessage {
   type: "new_entry" | "session_complete" | "heartbeat";
   entry?: SerializedSessionEntry;
