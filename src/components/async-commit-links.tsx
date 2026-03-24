@@ -88,13 +88,14 @@ export default async function AsyncCommitLinks({ sessionId }: { sessionId: strin
           </summary>
 
           <div style={{
-            padding: "8px 16px 12px",
+            padding: "8px 16px",
             fontSize: "11px",
             fontFamily: "monospace",
             color: "var(--text-muted)",
             display: "flex",
             gap: "16px",
             background: "var(--bg-secondary)",
+            borderBottom: commit.patch ? "1px solid var(--border)" : "none",
           }}>
             <span>author: {commit.author}</span>
             <span>date: {commit.date.slice(0, 19).replace("T", " ")}</span>
@@ -112,6 +113,39 @@ export default async function AsyncCommitLinks({ sessionId }: { sessionId: strin
               [copy hash]
             </span>
           </div>
+          {commit.patch && (
+            <div style={{
+              fontSize: "11px",
+              fontFamily: "monospace",
+              lineHeight: "1.5",
+              overflow: "auto",
+              maxHeight: "500px",
+              background: "#0a0a0a",
+            }}>
+              {commit.patch.split("\n").map((line, i) => {
+                let bg = "transparent";
+                let color = "var(--text-muted)";
+                if (line.startsWith("+") && !line.startsWith("+++")) {
+                  bg = "rgba(0, 255, 65, 0.06)";
+                  color = "var(--green)";
+                } else if (line.startsWith("-") && !line.startsWith("---")) {
+                  bg = "rgba(255, 68, 68, 0.08)";
+                  color = "var(--red)";
+                } else if (line.startsWith("@@")) {
+                  color = "var(--blue, #00aaff)";
+                  bg = "rgba(0, 170, 255, 0.06)";
+                } else if (line.startsWith("diff --git")) {
+                  color = "var(--text-primary)";
+                  bg = "rgba(255, 255, 255, 0.03)";
+                }
+                return (
+                  <div key={i} style={{ padding: "0 12px", background: bg, color, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                    {line}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </details>
       ))}
     </div>

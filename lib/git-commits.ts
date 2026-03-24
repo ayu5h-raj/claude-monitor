@@ -52,7 +52,18 @@ export function getSessionCommits(
         // First commit or stat failed — skip stats
       }
 
-      return { hash, shortHash, subject, date, author, filesChanged, insertions, deletions };
+      let patch = "";
+      try {
+        const raw = execSync(
+          `git show --format="" --patch ${hash}`,
+          { cwd: projectPath, encoding: "utf-8", timeout: 5_000, stdio: ["pipe", "pipe", "pipe"], maxBuffer: 1024 * 512 }
+        );
+        patch = raw.length > 20_000 ? raw.slice(0, 20_000) + "\n... (truncated)" : raw;
+      } catch {
+        // patch fetch failed
+      }
+
+      return { hash, shortHash, subject, date, author, filesChanged, insertions, deletions, patch };
     });
 
     commitCache.set(cacheKey, commits);

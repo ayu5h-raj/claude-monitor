@@ -208,6 +208,7 @@ export interface SessionCommit {
   filesChanged: number;
   insertions: number;
   deletions: number;
+  patch: string;
 }
 
 export interface SSEMessage {
