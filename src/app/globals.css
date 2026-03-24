@@ -168,6 +168,16 @@ a {
   background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.15), transparent);
 }
 
+/* Tab bar */
+.ide-tab-bar {
+  display: flex;
+  gap: 0;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  font-family: var(--font-mono);
+}
+
 /* Main area: sidebar + center */
 .ide-main {
   display: grid;
