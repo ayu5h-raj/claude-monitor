@@ -1,4 +1,5 @@
 import { getSessionDetail } from "@/lib/claude-data";
+import { renderMessageContent } from "@/src/components/message-renderer";
 import type { SessionEntry } from "@/lib/types";
 
 interface PlanInfo {
@@ -41,53 +42,6 @@ function extractPlans(entries: SessionEntry[]): PlanInfo[] {
     fileName: filePath.split("/").pop() || filePath,
     content,
   }));
-}
-
-function PlanContent({ content }: { content: string }) {
-  // Render markdown-like content with basic formatting
-  const lines = content.split("\n");
-  return (
-    <div style={{ padding: "16px 20px", fontFamily: "monospace", fontSize: "13px", lineHeight: "1.6" }}>
-      {lines.map((line, i) => {
-        // Headings
-        if (line.startsWith("# ")) {
-          return <div key={i} style={{ color: "var(--green)", fontSize: "16px", fontWeight: "bold", margin: "16px 0 8px" }}>{line.slice(2)}</div>;
-        }
-        if (line.startsWith("## ")) {
-          return <div key={i} style={{ color: "var(--green)", fontSize: "14px", fontWeight: "bold", margin: "14px 0 6px" }}>{line.slice(3)}</div>;
-        }
-        if (line.startsWith("### ")) {
-          return <div key={i} style={{ color: "var(--amber)", fontSize: "13px", fontWeight: "bold", margin: "12px 0 4px" }}>{line.slice(4)}</div>;
-        }
-        // Horizontal rule
-        if (line.match(/^---+$/)) {
-          return <hr key={i} style={{ border: "none", borderTop: "1px solid var(--border)", margin: "12px 0" }} />;
-        }
-        // List items
-        if (line.match(/^[-*] /)) {
-          return <div key={i} style={{ color: "var(--text-primary)", paddingLeft: "16px" }}>{line}</div>;
-        }
-        // Numbered list
-        if (line.match(/^\d+\. /)) {
-          return <div key={i} style={{ color: "var(--text-primary)", paddingLeft: "16px" }}>{line}</div>;
-        }
-        // Code blocks
-        if (line.startsWith("```")) {
-          return <div key={i} style={{ color: "var(--text-muted)", fontSize: "11px" }}>{line}</div>;
-        }
-        // Bold text in table-like rows
-        if (line.startsWith("|")) {
-          return <div key={i} style={{ color: "var(--text-secondary)", whiteSpace: "pre" }}>{line}</div>;
-        }
-        // Empty lines
-        if (line.trim() === "") {
-          return <div key={i} style={{ height: "8px" }} />;
-        }
-        // Regular text
-        return <div key={i} style={{ color: "var(--text-primary)" }}>{line}</div>;
-      })}
-    </div>
-  );
 }
 
 export default async function AsyncPlanViewer({ sessionId }: { sessionId: string }) {
@@ -153,7 +107,11 @@ export default async function AsyncPlanViewer({ sessionId }: { sessionId: string
               [copy plan]
             </span>
           </div>
-          <PlanContent content={plan.content} />
+          <div
+            className="conv-entry-content"
+            style={{ padding: "16px 20px" }}
+            dangerouslySetInnerHTML={{ __html: renderMessageContent(plan.content) }}
+          />
         </div>
       ))}
     </div>
