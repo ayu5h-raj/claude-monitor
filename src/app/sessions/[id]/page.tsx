@@ -9,12 +9,14 @@ import AsyncConversation from "@/src/components/async-conversation";
 import AsyncDiffViewer from "@/src/components/async-diff-viewer";
 import AsyncCommitLinks from "@/src/components/async-commit-links";
 import AsyncPRLinks from "@/src/components/async-pr-links";
+import AsyncPlanViewer from "@/src/components/async-plan-viewer";
 import AsyncTerminalDock from "@/src/components/async-terminal-dock";
 
 export const dynamic = "force-dynamic";
 
 const TABS = [
   { key: "conversation", label: "Conversation" },
+  { key: "plan", label: "Plan" },
   { key: "diff", label: "Diff" },
   { key: "commits", label: "Commits" },
   { key: "prs", label: "PRs" },
@@ -155,6 +157,11 @@ export default async function SessionDetailPage({
         {activeTab === "conversation" && (
           <Suspense fallback={<ConversationPlaceholder />} key={`conv-${id}`}>
             <AsyncConversation sessionId={id} />
+          </Suspense>
+        )}
+        {activeTab === "plan" && (
+          <Suspense fallback={<ConversationPlaceholder />} key={`plan-${id}`}>
+            <AsyncPlanViewer sessionId={id} />
           </Suspense>
         )}
         {activeTab === "diff" && (
