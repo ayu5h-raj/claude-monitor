@@ -9,7 +9,8 @@ export function Nav() {
   const isFiles = pathname === "/files";
   const isTools = pathname === "/tools";
   const isConfig = pathname === "/config";
-  const isSessions = !isStats && !isFiles && !isTools && !isConfig;
+  const isNew = pathname?.startsWith("/terminal/new");
+  const isSessions = !isStats && !isFiles && !isTools && !isConfig && !isNew;
 
   return (
     <nav
@@ -91,6 +92,27 @@ export function Nav() {
           </span>
           <span style={{ color: "var(--text-muted)" }}>]</span>
         </Link>
+        <button
+          data-open-new-session=""
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            fontSize: "inherit",
+            padding: 0,
+          }}
+        >
+          <span style={{ color: "var(--text-muted)" }}>[</span>
+          <span
+            style={{
+              color: isNew ? "var(--green)" : "var(--text-secondary)",
+            }}
+          >
+            + New
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>]</span>
+        </button>
       </div>
     </nav>
   );
