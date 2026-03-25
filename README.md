@@ -1,9 +1,10 @@
 # claude-monitor
 
-A terminal-themed web dashboard for monitoring Claude Code sessions across all your local repositories.
+A terminal-themed dashboard for monitoring Claude Code sessions across all your local repositories. Available as a macOS desktop app or web dashboard.
 
 ![Terminal UI](https://img.shields.io/badge/UI-Terminal_Themed-00ff41?style=flat-square&labelColor=0a0a0a)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square)
+![macOS](https://img.shields.io/badge/macOS-Desktop_App-blue?style=flat-square)
 
 ## What it does
 
@@ -18,17 +19,20 @@ Reads Claude Code session data from `~/.claude/` (read-only) and gives you:
 - **Usage stats** — total sessions, token usage by model, activity heatmap
 - **Repo sidebar** — filter by repository, branch, bookmarks, and tags
 
-## Prerequisites
+## Install
 
-- [Node.js](https://nodejs.org/) v20+
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed and used (creates `~/.claude/`)
+### Desktop app (recommended)
 
-For the embedded terminal feature (optional):
-- Python and C++ build tools (required by `node-pty` native addon)
-  - macOS: `xcode-select --install`
-  - Ubuntu: `sudo apt install build-essential python3`
+```bash
+brew tap ayu5h-raj/tap
+brew install --cask claude-monitor
+```
 
-## Quick start
+Or download the `.dmg` from [GitHub Releases](https://github.com/ayu5h-raj/claude-monitor/releases).
+
+### From source
+
+Requires [Node.js](https://nodejs.org/) v20+ and [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed.
 
 ```bash
 git clone https://github.com/ayu5h-raj/claude-monitor.git
@@ -39,17 +43,11 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-The dashboard reads directly from `~/.claude/projects/` — no setup needed if you use Claude Code.
-
-### With embedded terminal
-
-To enable the in-browser terminal for resuming sessions:
+For the embedded terminal (requires `node-pty` — macOS: `xcode-select --install`):
 
 ```bash
 npm run dev:terminal
 ```
-
-This starts a custom server with WebSocket support for the terminal. The terminal uses `node-pty` to spawn `claude --resume <session-id>` directly in your browser.
 
 ## Features
 
@@ -99,15 +97,18 @@ Bookmark sessions, add tags, write notes. All stored locally in `~/.claude-monit
 ## Commands
 
 ```bash
-npm run dev           # Start dev server (standard)
-npm run dev:terminal  # Start with embedded terminal (custom server + WebSocket)
-npm run build         # Production build
-npm test              # Run tests (102 unit tests)
+npm run dev           # Web dev server (standard)
+npm run dev:terminal  # Web + embedded terminal (custom server + WebSocket)
+npm run dev:desktop   # Electron desktop app (dev mode)
+npm run build         # Next.js production build
+npm run build:desktop # Build macOS .dmg
+npm test              # Run tests
 ```
 
 ## Tech stack
 
 - Next.js 16 (App Router, Server Components)
+- Electron + electron-builder (desktop app)
 - TypeScript
 - Tailwind CSS v4
 - xterm.js + node-pty (embedded terminal)
@@ -146,7 +147,13 @@ claude-monitor/
 │   ├── types.ts                         # TypeScript interfaces
 │   └── path-utils.ts                    # formatting helpers
 ├── server.ts                            # custom server for WebSocket terminal
-└── __tests__/                           # 102 unit tests
+├── electron/
+│   ├── main.ts                          # Electron main process
+│   ├── preload.ts                       # preload script
+│   └── tsconfig.json                    # Electron TypeScript config
+├── electron-builder.yml                 # desktop app build config
+├── scripts/build-electron.sh            # build orchestration
+└── __tests__/                           # unit tests
 ```
 
 ## License
