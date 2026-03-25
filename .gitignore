@@ -15,8 +15,14 @@
 /.next/
 /out/
 
-# Production
-/build
+# Production (Next.js build output)
+/build/*
+!build/entitlements.mac.plist
+!build/icon.icns
+
+# Electron
+/dist-electron/
+/release/
 
 # Misc
 .DS_Store
