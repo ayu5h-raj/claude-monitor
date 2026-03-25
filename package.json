@@ -1,6 +1,6 @@
 {
   "name": "claude-monitor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Terminal-themed dashboard for monitoring Claude Code sessions",
   "author": "ayu5h-raj",
   "private": true,
