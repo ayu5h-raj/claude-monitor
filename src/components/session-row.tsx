@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { formatTokenCount } from "@/lib/path-utils";
 import { BookmarkButton } from "@/src/components/bookmark-button";
 import { TagPills } from "@/src/components/tag-pills";
@@ -76,8 +75,8 @@ export default function SessionRow({
     : "completed";
 
   return (
-    <Link
-      href={`/sessions/${session.id}`}
+    <div
+      data-session-href={`/sessions/${session.id}`}
       style={{
         display: "grid",
         gridTemplateColumns: "20px 1fr 140px 80px 55px 60px 50px 80px 60px",
@@ -85,7 +84,7 @@ export default function SessionRow({
         gap: "0 12px",
         padding: "8px 16px",
         borderBottom: "1px solid var(--border-light)",
-        textDecoration: "none",
+        cursor: "pointer",
         color: "inherit",
       }}
     >
@@ -197,6 +196,6 @@ export default function SessionRow({
           </div>
         </details>
       </span>
-    </Link>
+    </div>
   );
 }

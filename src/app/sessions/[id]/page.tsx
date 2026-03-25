@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSessionDetail } from "@/lib/claude-data";
+import { getSessionMetadata } from "@/lib/session-metadata";
 import { IdeSidebarPlaceholder, ConversationPlaceholder, DockPlaceholder } from "@/src/components/terminal-loader";
 import { BookmarkButton } from "@/src/components/bookmark-button";
 import AsyncIdeSidebar from "@/src/components/async-ide-sidebar";
@@ -38,6 +39,7 @@ export default async function SessionDetailPage({
   const result = await getSessionDetail(id);
   if (!result) notFound();
   const { session } = result;
+  const metadata = await getSessionMetadata(session.id);
   const shortId = session.id.slice(0, 8);
   const returnUrl = `/sessions/${session.id}`;
   const resumeCmd = `cd "${session.projectPath}" && claude --resume ${session.id}`;
@@ -58,7 +60,7 @@ export default async function SessionDetailPage({
         <span style={{ color: "var(--border)" }}>|</span>
         <BookmarkButton
           sessionId={session.id}
-          bookmarked={false}
+          bookmarked={metadata?.bookmarked || false}
           returnUrl={returnUrl}
           size="sm"
         />

@@ -155,6 +155,13 @@ export default function RootLayout({
       return;
     }
 
+    // Session row click-to-navigate (skip if click is on a form/button/details)
+    var sessionRow = e.target.closest('[data-session-href]');
+    if (sessionRow && !e.target.closest('form') && !e.target.closest('button') && !e.target.closest('details')) {
+      window.location.href = sessionRow.getAttribute('data-session-href');
+      return;
+    }
+
     // Sidebar repo toggle (triangle vs link)
     var summary = e.target.closest('summary');
     if (summary) {
