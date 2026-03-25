@@ -72,17 +72,28 @@ jobs:
       - name: Update Homebrew Tap
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ github.ref_name }}
         run: |
-          # Remove 'v' prefix for cask version
           CASK_VERSION="${VERSION#v}"
 
-          # Download the release DMG and calculate SHA256
-          # Retry with exponential backoff - GitHub releases may not be immediately available
+          # Find the arm64 DMG asset URL from the release (avoids filename guessing)
+          DMG_URL=$(gh release view "${VERSION}" --repo ayu5h-raj/claude-monitor --json assets --jq '.assets[] | select(.name | test("arm64\\.dmg$")) | .url')
+          DMG_NAME=$(gh release view "${VERSION}" --repo ayu5h-raj/claude-monitor --json assets --jq '.assets[] | select(.name | test("arm64\\.dmg$")) | .name')
+
+          if [ -z "$DMG_URL" ]; then
+            echo "Could not find arm64 DMG asset in release ${VERSION}"
+            exit 1
+          fi
+
+          echo "Downloading: $DMG_NAME"
+          echo "URL: $DMG_URL"
+
+          # Download with retry
           MAX_RETRIES=5
           RETRY_DELAY=10
           for i in $(seq 1 $MAX_RETRIES); do
-            if curl -f -sL "https://github.com/ayu5h-raj/claude-monitor/releases/download/${VERSION}/Claude-Monitor-${CASK_VERSION}-arm64.dmg" -o claude-monitor.dmg; then
+            if curl -f -sL "$DMG_URL" -o claude-monitor.dmg; then
               break
             fi
             if [ $i -eq $MAX_RETRIES ]; then
@@ -97,17 +108,18 @@ jobs:
 
           echo "Version: $CASK_VERSION"
           echo "SHA256: $SHA256"
+          echo "Asset: $DMG_NAME"
 
           # Clone homebrew-tap repo
           git clone https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/ayu5h-raj/homebrew-tap.git
           cd homebrew-tap
 
-          # Generate the cask file
+          # Generate the cask file — URL uses the actual asset name from the release
           printf '%s\n' 'cask "claude-monitor" do' > Casks/claude-monitor.rb
-          printf '%s\n' '  version "CASK_VERSION_PLACEHOLDER"' >> Casks/claude-monitor.rb
-          printf '%s\n' '  sha256 "SHA256_PLACEHOLDER"' >> Casks/claude-monitor.rb
+          printf '%s\n' "  version \"${CASK_VERSION}\"" >> Casks/claude-monitor.rb
+          printf '%s\n' "  sha256 \"${SHA256}\"" >> Casks/claude-monitor.rb
           printf '%s\n' '' >> Casks/claude-monitor.rb
-          printf '%s\n' '  url "https://github.com/ayu5h-raj/claude-monitor/releases/download/v#{version}/Claude-Monitor-#{version}-arm64.dmg"' >> Casks/claude-monitor.rb
+          printf '%s\n' "  url \"https://github.com/ayu5h-raj/claude-monitor/releases/download/${VERSION}/${DMG_NAME}\"" >> Casks/claude-monitor.rb
           printf '%s\n' '  name "Claude Monitor"' >> Casks/claude-monitor.rb
           printf '%s\n' '  desc "Terminal-themed dashboard for monitoring Claude Code sessions"' >> Casks/claude-monitor.rb
           printf '%s\n' '  homepage "https://github.com/ayu5h-raj/claude-monitor"' >> Casks/claude-monitor.rb
@@ -124,10 +136,6 @@ jobs:
           printf '%s\n' '    "~/Library/Saved Application State/com.claudemonitor.app.savedState",' >> Casks/claude-monitor.rb
           printf '%s\n' '  ]' >> Casks/claude-monitor.rb
           printf '%s\n' 'end' >> Casks/claude-monitor.rb
-
-          # Replace placeholders with actual values
-          sed -i "s/CASK_VERSION_PLACEHOLDER/${CASK_VERSION}/" Casks/claude-monitor.rb
-          sed -i "s/SHA256_PLACEHOLDER/${SHA256}/" Casks/claude-monitor.rb
 
           # Commit and push
           git config user.name "github-actions[bot]"
