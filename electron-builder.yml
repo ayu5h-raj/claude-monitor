@@ -1,0 +1,55 @@
+appId: com.claudemonitor.app
+productName: Claude Monitor
+
+mac:
+  category: public.app-category.developer-tools
+  icon: build/icon.icns
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+files:
+  - dist-electron/**/*
+  - .next/**/*
+  - "!.next/cache/**/*"
+  - lib/**/*
+  - src/**/*
+  - public/**/*
+  - node_modules/**/*
+  - package.json
+  - next.config.ts
+  - postcss.config.mjs
+  - tsconfig.json
+  # Size optimizations — strip unnecessary files from node_modules
+  - "!node_modules/**/*.md"
+  - "!node_modules/**/*.map"
+  - "!node_modules/**/test/**"
+  - "!node_modules/**/tests/**"
+  - "!node_modules/**/__tests__/**"
+  - "!node_modules/**/docs/**"
+  - "!node_modules/**/*.tsbuildinfo"
+  # Strip non-macOS native prebuilds
+  - "!node_modules/node-pty/prebuilds/win32-*"
+  - "!node_modules/node-pty/prebuilds/linux-*"
+
+extraMetadata:
+  main: dist-electron/main.js
+
+directories:
+  output: release
+
+npmRebuild: true
