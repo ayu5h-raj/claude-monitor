@@ -1,6 +1,8 @@
 {
   "name": "claude-monitor",
   "version": "0.1.0",
+  "description": "Terminal-themed dashboard for monitoring Claude Code sessions",
+  "author": "ayu5h-raj",
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {

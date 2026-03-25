@@ -8,7 +8,7 @@ echo "==> Compiling Electron TypeScript..."
 npx tsc -p electron/tsconfig.json
 
 echo "==> Packaging with electron-builder..."
-npx electron-builder --mac
+npx electron-builder --mac --publish never
 
 echo "==> Done! Output in release/"
 ls -lh release/*.dmg 2>/dev/null || echo "(no .dmg files found)"
