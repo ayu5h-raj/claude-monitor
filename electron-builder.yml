@@ -1,5 +1,6 @@
 appId: com.claudemonitor.app
 productName: Claude Monitor
+artifactName: "Claude-Monitor-${version}-${arch}.${ext}"
 
 mac:
   category: public.app-category.developer-tools

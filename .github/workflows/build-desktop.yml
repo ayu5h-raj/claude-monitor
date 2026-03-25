@@ -57,8 +57,8 @@ jobs:
             ```
 
             **Manual Download**
-            - **Apple Silicon:** `Claude Monitor-${{ github.ref_name }}-arm64.dmg`
-            - **Intel Mac:** `Claude Monitor-${{ github.ref_name }}.dmg`
+            - **Apple Silicon:** `Claude-Monitor-${{ github.ref_name }}-arm64.dmg`
+            - **Intel Mac:** `Claude-Monitor-${{ github.ref_name }}-x64.dmg`
 
             Open the DMG, drag to Applications, then right-click → Open (first launch only).
           files: "*.dmg"
@@ -82,7 +82,7 @@ jobs:
           MAX_RETRIES=5
           RETRY_DELAY=10
           for i in $(seq 1 $MAX_RETRIES); do
-            if curl -f -sL "https://github.com/ayu5h-raj/claude-monitor/releases/download/${VERSION}/Claude%20Monitor-${CASK_VERSION}-arm64.dmg" -o claude-monitor.dmg; then
+            if curl -f -sL "https://github.com/ayu5h-raj/claude-monitor/releases/download/${VERSION}/Claude-Monitor-${CASK_VERSION}-arm64.dmg" -o claude-monitor.dmg; then
               break
             fi
             if [ $i -eq $MAX_RETRIES ]; then
@@ -107,7 +107,7 @@ jobs:
           printf '%s\n' '  version "CASK_VERSION_PLACEHOLDER"' >> Casks/claude-monitor.rb
           printf '%s\n' '  sha256 "SHA256_PLACEHOLDER"' >> Casks/claude-monitor.rb
           printf '%s\n' '' >> Casks/claude-monitor.rb
-          printf '%s\n' '  url "https://github.com/ayu5h-raj/claude-monitor/releases/download/v#{version}/Claude%20Monitor-#{version}-arm64.dmg"' >> Casks/claude-monitor.rb
+          printf '%s\n' '  url "https://github.com/ayu5h-raj/claude-monitor/releases/download/v#{version}/Claude-Monitor-#{version}-arm64.dmg"' >> Casks/claude-monitor.rb
           printf '%s\n' '  name "Claude Monitor"' >> Casks/claude-monitor.rb
           printf '%s\n' '  desc "Terminal-themed dashboard for monitoring Claude Code sessions"' >> Casks/claude-monitor.rb
           printf '%s\n' '  homepage "https://github.com/ayu5h-raj/claude-monitor"' >> Casks/claude-monitor.rb
