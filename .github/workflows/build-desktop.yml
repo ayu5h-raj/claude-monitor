@@ -22,7 +22,116 @@ jobs:
       - name: Build desktop app
         run: npm run build:desktop
 
-      - name: Upload DMG to GitHub Release
+      - name: Upload DMG artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dmg-files
+          path: release/*.dmg
+
+  create-release:
+    needs: build-mac
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download DMG artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dmg-files
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*.dmg
+          name: Claude Monitor ${{ github.ref_name }}
+          body: |
+            ## Claude Monitor ${{ github.ref_name }}
+
+            Terminal-themed dashboard for monitoring Claude Code sessions, packaged as a native macOS app.
+
+            ### Installation
+
+            **Homebrew (Recommended)**
+            ```bash
+            brew tap ayu5h-raj/tap
+            brew install --cask claude-monitor
+            ```
+
+            **Manual Download**
+            - **Apple Silicon:** `Claude Monitor-${{ github.ref_name }}-arm64.dmg`
+            - **Intel Mac:** `Claude Monitor-${{ github.ref_name }}.dmg`
+
+            Open the DMG, drag to Applications, then right-click → Open (first launch only).
+          files: "*.dmg"
+          draft: false
+          prerelease: false
+
+  update-homebrew:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Homebrew Tap
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          # Remove 'v' prefix for cask version
+          CASK_VERSION="${VERSION#v}"
+
+          # Download the release DMG and calculate SHA256
+          # Retry with exponential backoff - GitHub releases may not be immediately available
+          MAX_RETRIES=5
+          RETRY_DELAY=10
+          for i in $(seq 1 $MAX_RETRIES); do
+            if curl -f -sL "https://github.com/ayu5h-raj/claude-monitor/releases/download/${VERSION}/Claude%20Monitor-${CASK_VERSION}-arm64.dmg" -o claude-monitor.dmg; then
+              break
+            fi
+            if [ $i -eq $MAX_RETRIES ]; then
+              echo "Failed to download release after $MAX_RETRIES attempts"
+              exit 1
+            fi
+            echo "Download failed, retrying in ${RETRY_DELAY}s... (attempt $i/$MAX_RETRIES)"
+            sleep $RETRY_DELAY
+            RETRY_DELAY=$((RETRY_DELAY * 2))
+          done
+          SHA256=$(shasum -a 256 claude-monitor.dmg | cut -d' ' -f1)
+
+          echo "Version: $CASK_VERSION"
+          echo "SHA256: $SHA256"
+
+          # Clone homebrew-tap repo
+          git clone https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/ayu5h-raj/homebrew-tap.git
+          cd homebrew-tap
+
+          # Generate the cask file
+          printf '%s\n' 'cask "claude-monitor" do' > Casks/claude-monitor.rb
+          printf '%s\n' '  version "CASK_VERSION_PLACEHOLDER"' >> Casks/claude-monitor.rb
+          printf '%s\n' '  sha256 "SHA256_PLACEHOLDER"' >> Casks/claude-monitor.rb
+          printf '%s\n' '' >> Casks/claude-monitor.rb
+          printf '%s\n' '  url "https://github.com/ayu5h-raj/claude-monitor/releases/download/v#{version}/Claude%20Monitor-#{version}-arm64.dmg"' >> Casks/claude-monitor.rb
+          printf '%s\n' '  name "Claude Monitor"' >> Casks/claude-monitor.rb
+          printf '%s\n' '  desc "Terminal-themed dashboard for monitoring Claude Code sessions"' >> Casks/claude-monitor.rb
+          printf '%s\n' '  homepage "https://github.com/ayu5h-raj/claude-monitor"' >> Casks/claude-monitor.rb
+          printf '%s\n' '' >> Casks/claude-monitor.rb
+          printf '%s\n' '  postflight do' >> Casks/claude-monitor.rb
+          printf '%s\n' '    system_command "/usr/bin/xattr",' >> Casks/claude-monitor.rb
+          printf '%s\n' '                   args: ["-cr", "#{appdir}/Claude Monitor.app"],' >> Casks/claude-monitor.rb
+          printf '%s\n' '                   sudo: false' >> Casks/claude-monitor.rb
+          printf '%s\n' '  end' >> Casks/claude-monitor.rb
+          printf '%s\n' '' >> Casks/claude-monitor.rb
+          printf '%s\n' '  app "Claude Monitor.app"' >> Casks/claude-monitor.rb
+          printf '%s\n' '' >> Casks/claude-monitor.rb
+          printf '%s\n' '  zap trash: [' >> Casks/claude-monitor.rb
+          printf '%s\n' '    "~/Library/Saved Application State/com.claudemonitor.app.savedState",' >> Casks/claude-monitor.rb
+          printf '%s\n' '  ]' >> Casks/claude-monitor.rb
+          printf '%s\n' 'end' >> Casks/claude-monitor.rb
+
+          # Replace placeholders with actual values
+          sed -i "s/CASK_VERSION_PLACEHOLDER/${CASK_VERSION}/" Casks/claude-monitor.rb
+          sed -i "s/SHA256_PLACEHOLDER/${SHA256}/" Casks/claude-monitor.rb
+
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/claude-monitor.rb
+          git commit -m "Update Claude Monitor to ${VERSION}"
+          git push
