@@ -5,9 +5,11 @@ Terminal-themed Next.js dashboard for monitoring Claude Code sessions. Reads fro
 ## Commands
 
 ```bash
-npm run dev           # Start dev server (standard)
-npm run dev:terminal  # Start with embedded terminal support (custom server + WebSocket)
-npm run build         # Production build
+npm run dev           # Web dev server (standard)
+npm run dev:terminal  # Web + embedded terminal (custom server + WebSocket)
+npm run dev:desktop   # Electron desktop app (dev mode)
+npm run build         # Next.js production build
+npm run build:desktop # Build macOS .dmg (output in release/)
 npm test              # Run tests (vitest)
 ```
 
@@ -36,14 +38,43 @@ npm test              # Run tests (vitest)
 - `src/app/` — pages (server components) + API routes (export, SSE stream)
 - `src/components/` — UI components (mostly server, 3 client components)
 - `server.ts` — custom Node.js server for WebSocket terminal support
+- `electron/` — Electron main process (`main.ts`), preload, and tsconfig
+- `electron-builder.yml` — desktop app packaging config
 - `__tests__/` — vitest unit tests with fixtures
 
 ## Testing
 
-102 unit tests covering cache, path-utils, JSONL parser, file extraction, tool stats, code impact, search, and SSE helpers. Run from project root:
+Unit tests covering cache, path-utils, JSONL parser, file extraction, tool stats, code impact, search, and SSE helpers. Run from project root:
 
 ```bash
 npm test
 ```
+
+## Releasing a new version
+
+The release pipeline is fully automated. To ship a new version:
+
+1. Bump `version` in `package.json`
+2. Commit and merge to `main`
+3. Tag and push:
+   ```bash
+   git tag v<version>
+   git push origin v<version>
+   ```
+
+CI (`.github/workflows/build-desktop.yml`) will automatically:
+- Build macOS `.dmg` files (arm64 + x64) via electron-builder
+- Create a GitHub Release with both DMGs attached
+- Update the Homebrew cask formula in `ayu5h-raj/homebrew-tap` with the new version and sha256
+
+The `HOMEBREW_TAP_TOKEN` secret (GitHub PAT with repo scope for `homebrew-tap`) must be set in this repo's Actions secrets.
+
+### Electron architecture
+
+- `electron/main.ts` adapts `server.ts` for Electron — starts the HTTP + WebSocket + node-pty server on a dynamic port, then opens a BrowserWindow
+- In dev mode (`npm run dev:desktop`), the server runs via `tsx` and Electron just opens a window to `localhost:3000`
+- In production, the server runs inside Electron's main process
+- `node-pty` is rebuilt for Electron's Node ABI automatically by electron-builder during `build:desktop`
+- Do NOT add `output: "standalone"` to `next.config.ts` — it is incompatible with the custom server
 
 @AGENTS.md
