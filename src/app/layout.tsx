@@ -316,6 +316,35 @@ export default function RootLayout({
     });
   }
 
+  // ─── Tab navigation loading state ─────────────────────
+  // Use document-level delegation so it works even when the tab bar
+  // is rendered after the script runs (server component streaming).
+  document.addEventListener('click', function(e) {
+    var link = e.target.closest('.ide-tab-bar a');
+    if (!link || link.href === window.location.href) return;
+
+    // Show progress bar
+    var bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:3px;z-index:9999;background:linear-gradient(90deg,transparent 0%,#00ff41 50%,transparent 100%);background-size:200% 100%;animation:loadingBar 1.5s ease-in-out infinite';
+    document.body.appendChild(bar);
+
+    // Mark clicked tab as active, dim others
+    var tabBar = link.closest('.ide-tab-bar');
+    tabBar.querySelectorAll('a').forEach(function(t) {
+      if (t === link) {
+        t.style.color = 'var(--green)';
+        t.style.borderBottom = '2px solid var(--green)';
+      } else {
+        t.style.color = 'var(--text-muted)';
+        t.style.borderBottom = '2px solid transparent';
+      }
+    });
+
+    // Dim the main content area
+    var main = document.querySelector('.ide-main');
+    if (main) main.style.opacity = '0.5';
+  });
+
   // ─── File page auto-submit ────────────────────────────
   var repoSelect = document.getElementById('repo-select');
   if (repoSelect) {
