@@ -19,6 +19,22 @@ export default function Loading() {
         <div style={barStyle("60px")} />
         <div style={barStyle("50px")} />
       </div>
+      <div className="ide-tab-bar">
+        {["Conversation", "Plan", "Diff", "Commits", "PRs"].map((label) => (
+          <span
+            key={label}
+            style={{
+              color: "var(--text-muted)",
+              fontSize: "12px",
+              padding: "6px 12px",
+              borderBottom: "2px solid transparent",
+              opacity: 0.5,
+            }}
+          >
+            [{label}]
+          </span>
+        ))}
+      </div>
       <div className="ide-main">
         <IdeSidebarPlaceholder />
         <div id="ide-sidebar-drag" className="ide-sidebar-drag">{" "}</div>

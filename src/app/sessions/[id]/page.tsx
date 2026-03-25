@@ -130,10 +130,10 @@ export default async function SessionDetailPage({
         <div className="ide-header-glow" />
       </div>
 
-      {/* Tab bar */}
+      {/* Tab bar — plain <a> tags, not <Link>, because hydration is broken */}
       <div className="ide-tab-bar">
         {TABS.map(({ key, label }) => (
-          <Link
+          <a
             key={key}
             href={`/sessions/${id}?tab=${key}`}
             style={{
@@ -144,7 +144,7 @@ export default async function SessionDetailPage({
             }}
           >
             [{label}]
-          </Link>
+          </a>
         ))}
       </div>
 
