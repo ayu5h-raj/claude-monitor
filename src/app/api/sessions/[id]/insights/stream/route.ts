@@ -87,10 +87,11 @@ export async function GET(
     return new Response("Session not found", { status: 404 });
   }
 
-  const sessionContext = buildSessionContext(result.session, result.codeImpact, result.entries);
-  if (!sessionContext.trim()) {
+  const hasConversation = result.entries.some(e => e.type === "user" || e.type === "assistant");
+  if (!hasConversation) {
     return new Response("Session has no conversation data", { status: 400 });
   }
+  const sessionContext = buildSessionContext(result.session, result.codeImpact, result.entries);
 
   const client = new OpenAI({
     baseURL: config.baseUrl,

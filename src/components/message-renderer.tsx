@@ -21,8 +21,9 @@ function xmlPlaceholder(i: number): string {
 const renderer = new marked.Renderer();
 renderer.code = function ({ text, lang }: Tokens.Code): string {
   if (lang === "mermaid") {
-    // Mermaid needs raw text (not HTML-escaped) to parse arrows like -->
-    return `<div class="mermaid">${text}</div>`;
+    // Escape < and & to prevent HTML injection, but keep > raw for mermaid arrows (-->)
+    const safe = text.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    return `<div class="mermaid">${safe}</div>`;
   }
   return `<pre><code class="language-${escapeHtml(lang || "")}">${escapeHtml(text)}</code></pre>`;
 };
