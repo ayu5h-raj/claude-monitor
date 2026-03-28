@@ -356,13 +356,13 @@ export default function RootLayout({
         `}} />
         <Script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" strategy="afterInteractive" />
         <Script id="mermaid-init" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
-          (function checkMermaid() {
+          (function checkMermaid(attempts) {
             if (typeof mermaid !== 'undefined') {
               mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { primaryColor: '#1a3a1a', primaryTextColor: '#00ff41', primaryBorderColor: '#00ff41', lineColor: '#00ff41', secondaryColor: '#1a1a2e', tertiaryColor: '#0a0a0a', fontFamily: 'monospace' } });
-            } else {
-              setTimeout(checkMermaid, 100);
+            } else if (attempts < 50) {
+              setTimeout(function() { checkMermaid(attempts + 1); }, 100);
             }
-          })();
+          })(0);
         `}} />
         <Nav />
         <Suspense fallback={null}>

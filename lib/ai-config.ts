@@ -4,7 +4,7 @@ import os from "os";
 
 export interface AIConfig {
   baseUrl: string;
-  apiKey: string;
+  apiKey: string; // empty string for providers that don't require a key (e.g. Ollama)
   model: string;
   systemPrompt?: string;
 }
@@ -59,7 +59,7 @@ export async function getAIConfig(): Promise<AIConfig | null> {
   try {
     const raw = await fs.readFile(CONFIG_FILE, "utf-8");
     const data = JSON.parse(raw);
-    if (data.baseUrl && data.apiKey && data.model) {
+    if (data.baseUrl && data.model) {
       return data as AIConfig;
     }
     return null;

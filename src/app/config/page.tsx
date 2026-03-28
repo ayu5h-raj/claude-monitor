@@ -249,8 +249,7 @@ async function ConfigContent({
                 id="ai-api-key"
                 name="apiKey"
                 type="password"
-                defaultValue={aiConfig?.apiKey || ""}
-                placeholder="sk-..."
+                placeholder={aiConfig ? "leave blank to keep current key" : "sk-..."}
                 style={{
                   width: "100%",
                   padding: "8px 12px",

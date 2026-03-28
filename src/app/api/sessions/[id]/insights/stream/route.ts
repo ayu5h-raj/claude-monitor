@@ -51,7 +51,7 @@ export async function GET(
 
   const client = new OpenAI({
     baseURL: config.baseUrl,
-    apiKey: config.apiKey,
+    apiKey: config.apiKey || "not-required",
   });
 
   const encoder = new TextEncoder();
@@ -87,12 +87,14 @@ export async function GET(
           }
         }
 
-        // Cache the result
-        await saveCachedInsights(id, {
-          generatedAt: new Date().toISOString(),
-          model: config.model,
-          content: fullContent,
-        });
+        // Cache the result only if generation completed (not aborted)
+        if (!closed) {
+          await saveCachedInsights(id, {
+            generatedAt: new Date().toISOString(),
+            model: config.model,
+            content: fullContent,
+          });
+        }
 
         send({ type: "complete" });
       } catch (err: unknown) {

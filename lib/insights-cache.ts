@@ -11,7 +11,8 @@ export interface CachedInsights {
 const INSIGHTS_DIR = path.join(os.homedir(), ".claude-monitor", "insights");
 
 function insightsPath(sessionId: string): string {
-  return path.join(INSIGHTS_DIR, `${sessionId}.json`);
+  const sanitized = path.basename(sessionId);
+  return path.join(INSIGHTS_DIR, `${sanitized}.json`);
 }
 
 export async function getCachedInsights(

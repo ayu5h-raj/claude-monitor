@@ -29,6 +29,7 @@ export default function InsightsPanel({
     setIsStreaming(true);
     setShowCached(false);
 
+    let active = true;
     const es = new EventSource(`/api/sessions/${sessionId}/insights/stream`);
     eventSourceRef.current = es;
 
@@ -38,10 +39,12 @@ export default function InsightsPanel({
         if (data.type === "chunk" && data.text) {
           setContent((prev) => prev + data.text);
         } else if (data.type === "complete") {
+          active = false;
           setIsStreaming(false);
           setShowCached(true);
           es.close();
         } else if (data.type === "error") {
+          active = false;
           setError(data.message || "Generation failed");
           setIsStreaming(false);
           es.close();
@@ -52,13 +55,14 @@ export default function InsightsPanel({
     };
 
     es.onerror = () => {
-      if (isStreaming) {
+      if (active) {
         setError("Connection lost during generation");
         setIsStreaming(false);
       }
+      active = false;
       es.close();
     };
-  }, [sessionId, isStreaming]);
+  }, [sessionId]);
 
   useEffect(() => {
     return () => {

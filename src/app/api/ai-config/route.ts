@@ -20,16 +20,20 @@ export async function GET() {
 export async function POST(request: Request) {
   const formData = await request.formData();
   const baseUrl = (formData.get("baseUrl") as string)?.trim();
-  const apiKey = (formData.get("apiKey") as string)?.trim();
+  const apiKeyInput = (formData.get("apiKey") as string)?.trim();
   const model = (formData.get("model") as string)?.trim();
   const systemPrompt = (formData.get("systemPrompt") as string)?.trim() || undefined;
 
-  if (!baseUrl || !apiKey || !model) {
+  if (!baseUrl || !model) {
     return NextResponse.redirect(
-      new URL("/config?ai_error=All+fields+are+required", request.url),
+      new URL("/config?ai_error=Base+URL+and+Model+are+required", request.url),
       303
     );
   }
+
+  // Preserve existing API key if field left blank
+  const existing = await getAIConfig();
+  const apiKey = apiKeyInput || existing?.apiKey || "";
 
   try {
     await saveAIConfig({ baseUrl, apiKey, model, systemPrompt });
