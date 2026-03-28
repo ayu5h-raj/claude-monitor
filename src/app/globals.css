@@ -783,24 +783,11 @@ dialog#new-session-dialog button[data-close-dialog]:hover {
 .mermaid {
   margin: 12px 0;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .mermaid svg {
-  max-width: 100%;
   height: auto;
-}
-
-.mermaid .nodeLabel,
-.mermaid .edgeLabel {
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
-}
-
-.mermaid .node rect,
-.mermaid .node polygon,
-.mermaid .node circle {
-  overflow: visible !important;
 }
 
 /* Subtle scanline effect on header */
