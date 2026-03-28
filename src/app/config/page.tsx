@@ -289,39 +289,42 @@ async function ConfigContent({
                 }}
               />
             </div>
-            <div>
-              <label
-                htmlFor="ai-system-prompt"
-                style={{ fontSize: "11px", color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}
-              >
-                System Prompt{" "}
-                <span style={{ color: "var(--text-muted)" }}>
-                  (customize how session insights are generated)
-                </span>
-              </label>
-              <textarea
-                id="ai-system-prompt"
-                name="systemPrompt"
-                defaultValue={aiConfig?.systemPrompt || DEFAULT_INSIGHTS_PROMPT}
-                rows={12}
+            <details style={{ marginTop: "4px" }}>
+              <summary
                 style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "3px",
-                  color: "var(--text-primary)",
-                  fontFamily: "inherit",
-                  fontSize: "12px",
-                  boxSizing: "border-box",
-                  resize: "vertical",
-                  lineHeight: "1.5",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                  listStyle: "none",
                 }}
-              />
-              <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
-                Leave empty to use the default prompt. The conversation is appended as a user message automatically.
+              >
+                ▸ Advanced: Customize System Prompt
+              </summary>
+              <div style={{ marginTop: "8px" }}>
+                <textarea
+                  id="ai-system-prompt"
+                  name="systemPrompt"
+                  defaultValue={aiConfig?.systemPrompt || DEFAULT_INSIGHTS_PROMPT}
+                  rows={12}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    background: "var(--bg-secondary)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "3px",
+                    color: "var(--text-primary)",
+                    fontFamily: "inherit",
+                    fontSize: "12px",
+                    boxSizing: "border-box",
+                    resize: "vertical",
+                    lineHeight: "1.5",
+                  }}
+                />
+                <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
+                  Leave empty to use the default prompt. The conversation is appended as a user message automatically.
+                </div>
               </div>
-            </div>
+            </details>
             <div>
               <button
                 type="submit"
