@@ -60,7 +60,7 @@ export async function getAIConfig(): Promise<AIConfig | null> {
     const raw = await fs.readFile(CONFIG_FILE, "utf-8");
     const data = JSON.parse(raw);
     if (data.baseUrl && data.model) {
-      return data as AIConfig;
+      return { ...data, apiKey: data.apiKey || "" } as AIConfig;
     }
     return null;
   } catch {
