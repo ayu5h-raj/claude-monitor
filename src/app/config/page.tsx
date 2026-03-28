@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
 import { getGlobalConfig, getRepoConfigs } from "@/lib/config-data";
+import { getAIConfig, maskApiKey, DEFAULT_INSIGHTS_PROMPT } from "@/lib/ai-config";
 import StatCard from "@/components/stat-card";
 import TerminalLoader from "@/src/components/terminal-loader";
 
@@ -79,10 +80,17 @@ const subHeaderStyle = (color: string) => ({
   marginTop: "12px",
 });
 
-async function ConfigContent() {
-  const [config, repoConfigs] = await Promise.all([
+async function ConfigContent({
+  aiSaved,
+  aiError,
+}: {
+  aiSaved: boolean;
+  aiError: string | null;
+}) {
+  const [config, repoConfigs, aiConfig] = await Promise.all([
     getGlobalConfig(),
     getRepoConfigs(),
+    getAIConfig(),
   ]);
 
   const pluginCount = config.plugins.length;
@@ -142,6 +150,199 @@ async function ConfigContent() {
           subtitle="with config"
           color="#00cccc"
         />
+      </div>
+
+      {/* AI Provider Configuration */}
+      <div style={sectionHeaderStyle}>AI Provider</div>
+
+      {aiSaved && (
+        <div
+          style={{
+            padding: "10px 16px",
+            marginBottom: "16px",
+            background: "rgba(0,255,65,0.08)",
+            border: "1px solid rgba(0,255,65,0.3)",
+            borderRadius: "4px",
+            fontSize: "12px",
+            color: "var(--green)",
+          }}
+        >
+          AI provider configuration saved successfully.
+        </div>
+      )}
+
+      {aiError && (
+        <div
+          style={{
+            padding: "10px 16px",
+            marginBottom: "16px",
+            background: "rgba(255,60,60,0.08)",
+            border: "1px solid rgba(255,60,60,0.3)",
+            borderRadius: "4px",
+            fontSize: "12px",
+            color: "var(--red, #ff3c3c)",
+          }}
+        >
+          {decodeURIComponent(aiError)}
+        </div>
+      )}
+
+      <div style={panelStyle}>
+        <div style={panelHeaderStyle("var(--purple)")}>
+          OpenAI-Compatible Provider
+        </div>
+        <div style={{ padding: "16px" }}>
+          <div
+            style={{
+              fontSize: "11px",
+              color: "var(--text-muted)",
+              marginBottom: "16px",
+              lineHeight: "1.5",
+            }}
+          >
+            Configure any OpenAI-compatible API (OpenRouter, OpenAI, Ollama, Together, Groq, etc.)
+            to power the session Insights feature.
+          </div>
+          <form
+            action="/api/ai-config"
+            method="POST"
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+          >
+            <div>
+              <label
+                htmlFor="ai-base-url"
+                style={{ fontSize: "11px", color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}
+              >
+                Base URL
+              </label>
+              <input
+                id="ai-base-url"
+                name="baseUrl"
+                type="text"
+                defaultValue={aiConfig?.baseUrl || ""}
+                placeholder="https://openrouter.ai/api/v1"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "3px",
+                  color: "var(--text-primary)",
+                  fontFamily: "inherit",
+                  fontSize: "12px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="ai-api-key"
+                style={{ fontSize: "11px", color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}
+              >
+                API Key {aiConfig && (
+                  <span style={{ color: "var(--text-muted)" }}>
+                    (current: {maskApiKey(aiConfig.apiKey)})
+                  </span>
+                )}
+              </label>
+              <input
+                id="ai-api-key"
+                name="apiKey"
+                type="password"
+                defaultValue={aiConfig?.apiKey || ""}
+                placeholder="sk-..."
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "3px",
+                  color: "var(--text-primary)",
+                  fontFamily: "inherit",
+                  fontSize: "12px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="ai-model"
+                style={{ fontSize: "11px", color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}
+              >
+                Model
+              </label>
+              <input
+                id="ai-model"
+                name="model"
+                type="text"
+                defaultValue={aiConfig?.model || ""}
+                placeholder="openai/gpt-4o-mini"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "3px",
+                  color: "var(--text-primary)",
+                  fontFamily: "inherit",
+                  fontSize: "12px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="ai-system-prompt"
+                style={{ fontSize: "11px", color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}
+              >
+                System Prompt{" "}
+                <span style={{ color: "var(--text-muted)" }}>
+                  (customize how session insights are generated)
+                </span>
+              </label>
+              <textarea
+                id="ai-system-prompt"
+                name="systemPrompt"
+                defaultValue={aiConfig?.systemPrompt || DEFAULT_INSIGHTS_PROMPT}
+                rows={12}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "3px",
+                  color: "var(--text-primary)",
+                  fontFamily: "inherit",
+                  fontSize: "12px",
+                  boxSizing: "border-box",
+                  resize: "vertical",
+                  lineHeight: "1.5",
+                }}
+              />
+              <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
+                Leave empty to use the default prompt. The conversation is appended as a user message automatically.
+              </div>
+            </div>
+            <div>
+              <button
+                type="submit"
+                style={{
+                  background: "rgba(0,255,65,0.1)",
+                  border: "1px solid var(--green)",
+                  color: "var(--green)",
+                  padding: "8px 20px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: "12px",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                [ Save ]
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
       {/* Global Configuration */}
@@ -713,10 +914,15 @@ async function ConfigContent() {
   );
 }
 
-export default function ConfigPage() {
+export default async function ConfigPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ai_saved?: string; ai_error?: string }>;
+}) {
+  const { ai_saved, ai_error } = await searchParams;
   return (
     <Suspense fallback={<TerminalLoader message="loading config" />}>
-      <ConfigContent />
+      <ConfigContent aiSaved={ai_saved === "true"} aiError={ai_error || null} />
     </Suspense>
   );
 }

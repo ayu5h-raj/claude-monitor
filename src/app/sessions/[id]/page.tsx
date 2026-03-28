@@ -12,11 +12,15 @@ import AsyncCommitLinks from "@/src/components/async-commit-links";
 import AsyncPRLinks from "@/src/components/async-pr-links";
 import AsyncPlanViewer from "@/src/components/async-plan-viewer";
 import AsyncTerminalDock from "@/src/components/async-terminal-dock";
+import InsightsPanel from "@/src/components/insights-panel";
+import { getCachedInsights } from "@/lib/insights-cache";
+import { getAIConfig } from "@/lib/ai-config";
 
 export const dynamic = "force-dynamic";
 
 const TABS = [
   { key: "conversation", label: "Conversation" },
+  { key: "insights", label: "Insights" },
   { key: "plan", label: "Plan" },
   { key: "diff", label: "Diff" },
   { key: "commits", label: "Commits" },
@@ -161,6 +165,9 @@ export default async function SessionDetailPage({
             <AsyncConversation sessionId={id} />
           </Suspense>
         )}
+        {activeTab === "insights" && (
+          <InsightsTab sessionId={id} />
+        )}
         {activeTab === "plan" && (
           <Suspense fallback={<ConversationPlaceholder />} key={`plan-${id}`}>
             <AsyncPlanViewer sessionId={id} />
@@ -187,6 +194,56 @@ export default async function SessionDetailPage({
       <Suspense fallback={<DockPlaceholder />} key={`dock-${id}`}>
         <AsyncTerminalDock sessionId={id} />
       </Suspense>
+    </div>
+  );
+}
+
+async function InsightsTab({ sessionId }: { sessionId: string }) {
+  const [aiConfig, cached] = await Promise.all([
+    getAIConfig(),
+    getCachedInsights(sessionId),
+  ]);
+
+  if (!aiConfig) {
+    return (
+      <div
+        className="ide-center"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "64px 32px",
+          gap: "12px",
+        }}
+      >
+        <div style={{ color: "var(--text-muted)", fontSize: "13px", textAlign: "center" }}>
+          AI provider not configured. Set up your API key to generate session insights.
+        </div>
+        <a
+          href="/config"
+          style={{
+            color: "var(--green)",
+            fontSize: "13px",
+            border: "1px solid var(--green)",
+            padding: "8px 20px",
+            borderRadius: "4px",
+          }}
+        >
+          [ Configure AI Provider ]
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ide-center" style={{ overflow: "auto" }}>
+      <InsightsPanel
+        sessionId={sessionId}
+        cachedContent={cached?.content || null}
+        cachedModel={cached?.model || null}
+        cachedAt={cached?.generatedAt || null}
+      />
     </div>
   );
 }
