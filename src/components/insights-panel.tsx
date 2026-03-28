@@ -82,8 +82,33 @@ export default function InsightsPanel({
     if (!isStreaming && content && scrollRef.current) {
       const mermaidDivs = scrollRef.current.querySelectorAll(".mermaid:not([data-processed])");
       if (mermaidDivs.length > 0 && typeof window !== "undefined" && (window as unknown as Record<string, unknown>).mermaid) {
-        const mermaidLib = (window as unknown as Record<string, { run: (opts: { nodes: NodeListOf<Element> }) => void }>).mermaid;
-        mermaidLib.run({ nodes: mermaidDivs });
+        const mermaidLib = (window as unknown as { mermaid: { parse: (text: string) => Promise<unknown>; run: (opts: { nodes: Element[] }) => void } }).mermaid;
+        // Validate each diagram before rendering — show code block on parse failure
+        const validDivs: Element[] = [];
+        const checks = Array.from(mermaidDivs).map(async (div) => {
+          const raw = div.textContent || "";
+          try {
+            await mermaidLib.parse(raw);
+            validDivs.push(div);
+          } catch {
+            // Replace with a styled code block fallback
+            const pre = document.createElement("pre");
+            pre.style.cssText = "background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:12px;font-size:11px;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;margin:8px 0;";
+            const label = document.createElement("div");
+            label.style.cssText = "font-size:10px;color:var(--text-muted);margin-bottom:6px;";
+            label.textContent = "diagram (could not render)";
+            const code = document.createElement("code");
+            code.textContent = raw;
+            pre.appendChild(label);
+            pre.appendChild(code);
+            div.replaceWith(pre);
+          }
+        });
+        Promise.all(checks).then(() => {
+          if (validDivs.length > 0) {
+            mermaidLib.run({ nodes: validDivs });
+          }
+        });
       }
     }
   }, [content, isStreaming]);
