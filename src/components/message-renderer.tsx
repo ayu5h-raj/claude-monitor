@@ -21,7 +21,8 @@ function xmlPlaceholder(i: number): string {
 const renderer = new marked.Renderer();
 renderer.code = function ({ text, lang }: Tokens.Code): string {
   if (lang === "mermaid") {
-    return `<div class="mermaid">${escapeHtml(text)}</div>`;
+    // Mermaid needs raw text (not HTML-escaped) to parse arrows like -->
+    return `<div class="mermaid">${text}</div>`;
   }
   return `<pre><code class="language-${escapeHtml(lang || "")}">${escapeHtml(text)}</code></pre>`;
 };
