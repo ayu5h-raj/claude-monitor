@@ -39,7 +39,7 @@ flowchart TD
     E --> F[Outcome]
 \`\`\`
 
-Keep the diagram focused on 4-8 key nodes. Show decision points as diamonds, actions as rectangles, and the final outcome as a rounded rectangle. Include brief labels on edges to explain why a path was chosen.
+IMPORTANT: Keep node labels SHORT (max 4-5 words). Use edge labels for details. Show decision points as diamonds, actions as rectangles. Aim for 4-8 nodes total.
 
 ## Pivots
 Any changes in direction — what triggered them and what changed. If there were no significant pivots, say "No major pivots — the approach was consistent throughout" and move on.
