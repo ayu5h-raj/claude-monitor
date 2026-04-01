@@ -779,6 +779,17 @@ dialog#new-session-dialog button[data-close-dialog]:hover {
   color: var(--green);
 }
 
+/* Mermaid diagram overrides */
+.mermaid {
+  margin: 12px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.mermaid svg {
+  height: auto;
+}
+
 /* Subtle scanline effect on header */
 .ide-header::after {
   content: "";
