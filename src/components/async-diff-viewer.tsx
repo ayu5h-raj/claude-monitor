@@ -30,7 +30,7 @@ function FileDiff({ file }: { file: FileChange }) {
     file.changeType === "deleted" ? "var(--red)" : "var(--amber)";
 
   return (
-    <details open={file.edits.length <= 3 && (!file.createdContent || file.createdContent.split("\n").length <= 50)}>
+    <details>
       <summary style={{
         padding: "8px 12px",
         cursor: "pointer",
