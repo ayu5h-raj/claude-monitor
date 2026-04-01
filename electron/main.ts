@@ -9,6 +9,9 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
+// Flag for the client to know it's running inside Electron (enables update checks)
+process.env.NEXT_PUBLIC_IS_DESKTOP = "true";
+
 const PROJECTS_DIR = path.join(os.homedir(), ".claude", "projects");
 
 function sessionExists(sessionId: string): boolean {
