@@ -289,42 +289,6 @@ async function ConfigContent({
                 }}
               />
             </div>
-            <details style={{ marginTop: "4px" }}>
-              <summary
-                style={{
-                  fontSize: "11px",
-                  color: "var(--text-muted)",
-                  cursor: "pointer",
-                  listStyle: "none",
-                }}
-              >
-                ▸ Advanced: Customize System Prompt
-              </summary>
-              <div style={{ marginTop: "8px" }}>
-                <textarea
-                  id="ai-system-prompt"
-                  name="systemPrompt"
-                  defaultValue={aiConfig?.systemPrompt || DEFAULT_INSIGHTS_PROMPT}
-                  rows={12}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    background: "var(--bg-secondary)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "3px",
-                    color: "var(--text-primary)",
-                    fontFamily: "inherit",
-                    fontSize: "12px",
-                    boxSizing: "border-box",
-                    resize: "vertical",
-                    lineHeight: "1.5",
-                  }}
-                />
-                <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
-                  Leave empty to use the default prompt. The conversation is appended as a user message automatically.
-                </div>
-              </div>
-            </details>
             <div>
               <button
                 type="submit"
@@ -341,6 +305,74 @@ async function ConfigContent({
                 }}
               >
                 [ Save ]
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Prompts Configuration */}
+      <div style={sectionHeaderStyle}>Prompts</div>
+
+      <div style={panelStyle}>
+        <div style={panelHeaderStyle("var(--blue)")}>
+          Session Insights
+        </div>
+        <div style={{ padding: "16px" }}>
+          <div
+            style={{
+              fontSize: "11px",
+              color: "var(--text-muted)",
+              marginBottom: "12px",
+              lineHeight: "1.5",
+            }}
+          >
+            Customize the system prompt used when generating AI insights for sessions.
+            Leave empty to use the default prompt.
+          </div>
+          <form
+            action="/api/ai-config"
+            method="POST"
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+          >
+            {/* Hidden fields to preserve existing provider config */}
+            <input type="hidden" name="baseUrl" value={aiConfig?.baseUrl || ""} />
+            <input type="hidden" name="model" value={aiConfig?.model || ""} />
+            <textarea
+              id="ai-system-prompt"
+              name="systemPrompt"
+              defaultValue={aiConfig?.systemPrompt || DEFAULT_INSIGHTS_PROMPT}
+              rows={12}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border)",
+                borderRadius: "3px",
+                color: "var(--text-primary)",
+                fontFamily: "inherit",
+                fontSize: "12px",
+                boxSizing: "border-box",
+                resize: "vertical",
+                lineHeight: "1.5",
+              }}
+            />
+            <div>
+              <button
+                type="submit"
+                style={{
+                  background: "rgba(0,255,65,0.1)",
+                  border: "1px solid var(--green)",
+                  color: "var(--green)",
+                  padding: "8px 20px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: "12px",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                [ Save Prompt ]
               </button>
             </div>
           </form>
