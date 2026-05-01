@@ -8,6 +8,7 @@ interface InsightsPanelProps {
   cachedContent: string | null;
   cachedModel: string | null;
   cachedAt: string | null;
+  inProgress?: boolean;
 }
 
 export default function InsightsPanel({
@@ -15,6 +16,7 @@ export default function InsightsPanel({
   cachedContent,
   cachedModel,
   cachedAt,
+  inProgress,
 }: InsightsPanelProps) {
   const [content, setContent] = useState(cachedContent || "");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -69,6 +71,18 @@ export default function InsightsPanel({
       eventSourceRef.current?.close();
     };
   }, []);
+
+  // If the server says a generation is already running for this session,
+  // attach to its live stream instead of showing the "Generate" button.
+  // The stream endpoint is smart enough to replay accumulated content + tail
+  // any new chunks, so a tab switch / page refresh resumes seamlessly.
+  const autoResumedRef = useRef(false);
+  useEffect(() => {
+    if (inProgress && !autoResumedRef.current) {
+      autoResumedRef.current = true;
+      generate();
+    }
+  }, [inProgress, generate]);
 
   // Auto-scroll during streaming
   useEffect(() => {
