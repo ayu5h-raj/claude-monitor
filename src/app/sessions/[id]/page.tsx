@@ -15,6 +15,7 @@ import AsyncTerminalDock from "@/src/components/async-terminal-dock";
 import InsightsPanel from "@/src/components/insights-panel";
 import { getCachedInsights } from "@/lib/insights-cache";
 import { getAIConfig } from "@/lib/ai-config";
+import { isInProgress } from "@/lib/insights-stream";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +78,20 @@ export default async function SessionDetailPage({
         >
           {session.project}
         </span>
+        {session.name && (
+          <span
+            style={{
+              color: "var(--cyan, #4ec9b0)",
+              fontSize: "11px",
+              border: "1px solid var(--cyan, #4ec9b0)",
+              borderRadius: "3px",
+              padding: "1px 6px",
+            }}
+            title={`Named: ${session.name}`}
+          >
+            {session.name}
+          </span>
+        )}
         {session.branch && (
           <span style={{ color: "var(--green)", fontSize: "12px" }}>
             {session.branch}
@@ -203,6 +218,7 @@ async function InsightsTab({ sessionId }: { sessionId: string }) {
     getAIConfig(),
     getCachedInsights(sessionId),
   ]);
+  const inProgress = isInProgress(sessionId);
 
   if (!aiConfig) {
     return (
@@ -243,6 +259,7 @@ async function InsightsTab({ sessionId }: { sessionId: string }) {
         cachedContent={cached?.content || null}
         cachedModel={cached?.model || null}
         cachedAt={cached?.generatedAt || null}
+        inProgress={inProgress}
       />
     </div>
   );

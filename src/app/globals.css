@@ -17,6 +17,7 @@
   --amber: #ffaa00;
   --blue: #00aaff;
   --purple: #aa88ff;
+  --cyan: #4ec9b0;
   --red: #ff4444;
 }
 
@@ -63,6 +64,11 @@ a {
 @keyframes pulse-live {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+@keyframes pulse-update {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 .live-dot {
   animation: pulse-live 2s ease-in-out infinite;

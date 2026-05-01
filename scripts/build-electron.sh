@@ -2,7 +2,7 @@
 set -e
 
 echo "==> Building Next.js production bundle..."
-npm run build
+NEXT_PUBLIC_IS_DESKTOP=true npm run build
 
 echo "==> Compiling Electron TypeScript..."
 npx tsc -p electron/tsconfig.json

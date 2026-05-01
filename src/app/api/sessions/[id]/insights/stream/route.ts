@@ -1,7 +1,15 @@
 import OpenAI from "openai";
 import { getAIConfig, DEFAULT_INSIGHTS_PROMPT } from "@/lib/ai-config";
 import { getSessionDetail } from "@/lib/claude-data";
-import { saveCachedInsights } from "@/lib/insights-cache";
+import {
+  ActiveGeneration,
+  StreamEvent,
+  appendChunk,
+  errorGeneration,
+  finishGeneration,
+  getActiveGeneration,
+  startGeneration,
+} from "@/lib/insights-stream";
 import type { Session, CodeImpact } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -71,12 +79,127 @@ ${fileList}${codeImpact.allFiles.length > 20 ? `\n  ...and ${codeImpact.allFiles
   return text;
 }
 
+async function runGenerationInBackground(
+  gen: ActiveGeneration,
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  sessionContext: string
+): Promise<void> {
+  try {
+    const client = new OpenAI({
+      baseURL: baseUrl,
+      apiKey: apiKey || "not-required",
+    });
+
+    const completion = await client.chat.completions.create({
+      model,
+      stream: true,
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `Here is the full Claude Code session data (metadata, code impact, and conversation):\n\n${sessionContext}`,
+        },
+      ],
+    });
+
+    for await (const chunk of completion) {
+      const text = chunk.choices?.[0]?.delta?.content;
+      if (text) appendChunk(gen, text);
+    }
+
+    finishGeneration(gen);
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "Unknown error from AI provider";
+    errorGeneration(gen, message);
+  }
+}
+
+function streamToClient(gen: ActiveGeneration, abortSignal: AbortSignal): Response {
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    start(controller) {
+      let closed = false;
+
+      function send(event: StreamEvent) {
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        } catch {
+          closed = true;
+        }
+      }
+
+      function closeStream() {
+        if (closed) return;
+        closed = true;
+        try {
+          controller.close();
+        } catch {
+          // already closed
+        }
+      }
+
+      // Replay everything accumulated so far (handles tab-switch reattach)
+      if (gen.content) {
+        send({ type: "chunk", text: gen.content });
+      }
+
+      // If generation is already finished, send terminal event and close
+      if (gen.done) {
+        if (gen.error) {
+          send({ type: "error", message: gen.error });
+        } else {
+          send({ type: "complete" });
+        }
+        closeStream();
+        return;
+      }
+
+      // Subscribe to live events
+      const subscriber = (event: StreamEvent) => {
+        send(event);
+        if (event.type === "complete" || event.type === "error") {
+          gen.subscribers.delete(subscriber);
+          closeStream();
+        }
+      };
+      gen.subscribers.add(subscriber);
+
+      // Drop the subscription if the client disconnects (tab switch / page unload)
+      abortSignal.addEventListener("abort", () => {
+        gen.subscribers.delete(subscriber);
+        closeStream();
+      });
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
   const { id } = await params;
 
+  // If a generation is already running for this session, just attach to it.
+  const existing = getActiveGeneration(id);
+  if (existing) {
+    return streamToClient(existing, request.signal);
+  }
+
+  // Otherwise validate config + session, then kick off a new generation.
   const config = await getAIConfig();
   if (!config) {
     return new Response("AI provider not configured", { status: 400 });
@@ -87,84 +210,30 @@ export async function GET(
     return new Response("Session not found", { status: 404 });
   }
 
-  const hasConversation = result.entries.some(e => e.type === "user" || e.type === "assistant");
+  const hasConversation = result.entries.some(
+    (e) => e.type === "user" || e.type === "assistant"
+  );
   if (!hasConversation) {
     return new Response("Session has no conversation data", { status: 400 });
   }
-  const sessionContext = buildSessionContext(result.session, result.codeImpact, result.entries);
 
-  const client = new OpenAI({
-    baseURL: config.baseUrl,
-    apiKey: config.apiKey || "not-required",
-  });
+  const sessionContext = buildSessionContext(
+    result.session,
+    result.codeImpact,
+    result.entries
+  );
 
-  const encoder = new TextEncoder();
-  let fullContent = "";
-  let closed = false;
+  const gen = startGeneration(id, config.model);
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      function send(data: Record<string, unknown>) {
-        if (closed) return;
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-      }
+  // Fire-and-forget — generation continues even if this request aborts
+  void runGenerationInBackground(
+    gen,
+    config.baseUrl,
+    config.apiKey,
+    config.model,
+    config.systemPrompt || DEFAULT_INSIGHTS_PROMPT,
+    sessionContext
+  );
 
-      try {
-        const completion = await client.chat.completions.create({
-          model: config.model,
-          stream: true,
-          messages: [
-            { role: "system", content: config.systemPrompt || DEFAULT_INSIGHTS_PROMPT },
-            {
-              role: "user",
-              content: `Here is the full Claude Code session data (metadata, code impact, and conversation):\n\n${sessionContext}`,
-            },
-          ],
-        });
-
-        for await (const chunk of completion) {
-          if (closed) break;
-          const text = chunk.choices?.[0]?.delta?.content;
-          if (text) {
-            fullContent += text;
-            send({ type: "chunk", text });
-          }
-        }
-
-        // Cache the result only if generation completed (not aborted)
-        if (!closed) {
-          await saveCachedInsights(id, {
-            generatedAt: new Date().toISOString(),
-            model: config.model,
-            content: fullContent,
-          });
-        }
-
-        send({ type: "complete" });
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "Unknown error from AI provider";
-        send({ type: "error", message });
-      } finally {
-        closed = true;
-        try {
-          controller.close();
-        } catch {
-          // Already closed
-        }
-      }
-    },
-  });
-
-  request.signal.addEventListener("abort", () => {
-    closed = true;
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+  return streamToClient(gen, request.signal);
 }

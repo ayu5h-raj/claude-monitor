@@ -16,6 +16,7 @@ interface SessionRowProps {
     filesChanged: string[];
     contextSize: number;
     firstMessage?: string;
+    name?: string;
   };
   showSummary?: boolean;
   bookmarked?: boolean;
@@ -116,9 +117,27 @@ export default function SessionRow({
           alignItems: "center",
           gap: "4px",
         }}
-        title={showSummary ? session.firstMessage : session.project}
+        title={session.name || (showSummary ? session.firstMessage : session.project)}
       >
         <BookmarkButton sessionId={session.id} bookmarked={bookmarked || false} returnUrl={returnUrl} size="sm" />
+        {session.name && (
+          <span
+            style={{
+              color: "var(--cyan, #4ec9b0)",
+              fontSize: "10px",
+              border: "1px solid var(--cyan, #4ec9b0)",
+              borderRadius: "3px",
+              padding: "1px 5px",
+              flexShrink: 0,
+              maxWidth: "180px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+            title={`Named: ${session.name}`}
+          >
+            {session.name}
+          </span>
+        )}
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {showSummary ? (session.firstMessage || session.project) : session.project}
         </span>

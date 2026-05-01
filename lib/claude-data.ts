@@ -110,7 +110,8 @@ export async function getAllSessions(): Promise<Session[]> {
             }
           }
 
-          sessions.push({ ...meta, status, activeState });
+          const name = activeList?.find(s => s.sessionId === sessionId)?.name;
+          sessions.push({ ...meta, status, activeState, name });
         } catch {
           // Skip unreadable files
         }
@@ -155,8 +156,9 @@ export async function getSessionDetail(
             const earliestStart = activeList?.length ? Math.min(...activeList.map(s => s.startedAt)) : Infinity;
             const status: "active" | "completed" = (activeList?.length && stat.mtimeMs >= earliestStart) ? "active" : "completed";
             const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
+            const name = activeList?.find(s => s.sessionId === sessionId)?.name;
             const codeImpact = extractCodeImpact(rawEntries);
-            return { session: { ...meta, status, activeState }, entries: cached.entries, codeImpact };
+            return { session: { ...meta, status, activeState, name }, entries: cached.entries, codeImpact };
           }
 
           const content = await fs.readFile(filePath, "utf-8");
@@ -167,11 +169,12 @@ export async function getSessionDetail(
           const activeSessArr = activeSessions.get(meta.projectPath);
           const status: "active" | "completed" = (activeSessArr && activeSessArr.some(s => stat.mtimeMs >= s.startedAt)) ? "active" : "completed";
           const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
+          const name = activeSessArr?.find(s => s.sessionId === sessionId)?.name;
 
           sessionDetailCache.set(sessionId, { entries, mtime });
           const codeImpact = extractCodeImpact(rawEntries);
 
-          return { session: { ...meta, status, activeState }, entries, codeImpact };
+          return { session: { ...meta, status, activeState, name }, entries, codeImpact };
         } catch {
           // File doesn't exist in this project dir, try next
         }

@@ -25,6 +25,7 @@ export interface Session {
   filesChanged: string[];
   toolStats: Record<string, { calls: number; errors: number }>;
   firstMessage?: string;
+  name?: string;
 }
 
 export interface SessionEntry {
@@ -139,6 +140,8 @@ export interface ActiveSession {
   sessionId: string;
   cwd: string;
   startedAt: number;
+  name?: string;
+  status?: string;
 }
 
 export interface SessionMetadata {
