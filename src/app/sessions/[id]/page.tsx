@@ -77,6 +77,20 @@ export default async function SessionDetailPage({
         >
           {session.project}
         </span>
+        {session.name && (
+          <span
+            style={{
+              color: "var(--cyan, #4ec9b0)",
+              fontSize: "11px",
+              border: "1px solid var(--cyan, #4ec9b0)",
+              borderRadius: "3px",
+              padding: "1px 6px",
+            }}
+            title={`Named: ${session.name}`}
+          >
+            {session.name}
+          </span>
+        )}
         {session.branch && (
           <span style={{ color: "var(--green)", fontSize: "12px" }}>
             {session.branch}
