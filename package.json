@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:terminal": "npx tsx server.ts",
-    "dev:desktop": "npx tsc -p electron/tsconfig.json && concurrently --kill-others -n server,electron -c green,blue \"npx tsx server.ts\" \"sleep 4 && npx electron .\"",
+    "dev:desktop": "npx tsc -p electron/tsconfig.json && NEXT_PUBLIC_IS_DESKTOP=true concurrently --kill-others -n server,electron -c green,blue \"npx tsx server.ts\" \"sleep 4 && npx electron .\"",
     "build": "next build",
     "build:desktop": "bash scripts/build-electron.sh",
     "start": "next start",
