@@ -122,17 +122,18 @@ export async function GET(
           ],
         });
 
+        // Keep accumulating even if the client disconnects — the model is
+        // already generating tokens we've paid for, so we let it finish and
+        // cache the result so a tab switch doesn't lose the work.
         for await (const chunk of completion) {
-          if (closed) break;
           const text = chunk.choices?.[0]?.delta?.content;
           if (text) {
             fullContent += text;
-            send({ type: "chunk", text });
+            send({ type: "chunk", text }); // no-op when closed
           }
         }
 
-        // Cache the result only if generation completed (not aborted)
-        if (!closed) {
+        if (fullContent) {
           await saveCachedInsights(id, {
             generatedAt: new Date().toISOString(),
             model: config.model,
