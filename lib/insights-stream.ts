@@ -16,7 +16,18 @@ export interface ActiveGeneration {
   error?: string;
 }
 
-const active = new Map<string, ActiveGeneration>();
+// In Next.js with Turbopack, server components and route handlers can be
+// loaded as separate module instances. A plain module-scoped Map would not
+// be shared between them — the route handler would register a generation
+// that the server component (calling isInProgress) couldn't see. Pin the
+// map to globalThis to guarantee a single instance per process.
+const GLOBAL_KEY = Symbol.for("claude-monitor.insights.activeGenerations");
+type GlobalWithMap = typeof globalThis & {
+  [GLOBAL_KEY]?: Map<string, ActiveGeneration>;
+};
+const g = globalThis as GlobalWithMap;
+const active: Map<string, ActiveGeneration> =
+  g[GLOBAL_KEY] ?? (g[GLOBAL_KEY] = new Map());
 
 export function isInProgress(sessionId: string): boolean {
   const gen = active.get(sessionId);
