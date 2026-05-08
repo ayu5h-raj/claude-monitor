@@ -3,7 +3,6 @@ import { getSessionDetail } from "@/lib/claude-data";
 import { getSessionMetadata } from "@/lib/session-metadata";
 import { getGlobalConfig, getProjectConfig } from "@/lib/config-data";
 import { formatTokenCount, formatDuration } from "@/lib/path-utils";
-import { BookmarkButton } from "@/src/components/bookmark-button";
 import { TagPills } from "@/src/components/tag-pills";
 import { addTagAction, saveNotesAction } from "@/src/app/actions/metadata";
 import CodeImpactView from "@/src/components/code-impact-view";
