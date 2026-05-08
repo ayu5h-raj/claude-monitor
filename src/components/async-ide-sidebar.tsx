@@ -7,6 +7,8 @@ import { BookmarkButton } from "@/src/components/bookmark-button";
 import { TagPills } from "@/src/components/tag-pills";
 import { addTagAction, saveNotesAction } from "@/src/app/actions/metadata";
 import CodeImpactView from "@/src/components/code-impact-view";
+import TodosPanel from "@/src/components/todos-panel";
+import { extractTodos } from "@/lib/todos";
 
 export default async function AsyncIdeSidebar({ sessionId, error }: { sessionId: string; error?: string }) {
   const [result, globalConfig] = await Promise.all([
@@ -14,7 +16,8 @@ export default async function AsyncIdeSidebar({ sessionId, error }: { sessionId:
     getGlobalConfig(),
   ]);
   if (!result) return null;
-  const { session, codeImpact } = result;
+  const { session, codeImpact, entries } = result;
+  const todos = extractTodos(entries);
 
   const [metadata, projectConfig] = await Promise.all([
     getSessionMetadata(session.id),
@@ -146,6 +149,9 @@ export default async function AsyncIdeSidebar({ sessionId, error }: { sessionId:
           </div>
         </details>
       )}
+
+      {/* Collapsible: TODOS (reconstructed from JSONL TodoWrite/TaskCreate calls) */}
+      <TodosPanel summary={todos} />
 
       {/* Collapsible: CODE IMPACT */}
       <CodeImpactView impact={codeImpact} repoPath={session.projectPath} />
