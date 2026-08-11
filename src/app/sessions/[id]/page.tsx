@@ -37,12 +37,13 @@ export default async function SessionDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; tab?: string; view?: string }>;
+  searchParams: Promise<{ error?: string; tab?: string; view?: string; page?: string }>;
 }) {
   const { id } = await params;
-  const { error, tab, view } = await searchParams;
+  const { error, tab, view, page } = await searchParams;
   const activeTab: TabKey = (TABS.some(t => t.key === tab) ? tab : "conversation") as TabKey;
   const chatOnly = view === "chat";
+  const pageNum = Math.max(1, Number.parseInt(page ?? "1", 10) || 1);
 
   const result = await getSessionDetail(id);
   if (!result) notFound();
@@ -197,8 +198,8 @@ export default async function SessionDetailPage({
         <div id="ide-sidebar-drag" className="ide-sidebar-drag">{" "}</div>
 
         {activeTab === "conversation" && (
-          <Suspense fallback={<ConversationPlaceholder />} key={`conv-${id}-${chatOnly}`}>
-            <AsyncConversation sessionId={id} chatOnly={chatOnly} />
+          <Suspense fallback={<ConversationPlaceholder />} key={`conv-${id}-${chatOnly}-${pageNum}`}>
+            <AsyncConversation sessionId={id} chatOnly={chatOnly} page={pageNum} />
           </Suspense>
         )}
         {activeTab === "analytics" && (

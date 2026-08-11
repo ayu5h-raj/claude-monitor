@@ -65,6 +65,27 @@ export function isChatEntry(entry: { type: string }): boolean {
   return entry.type === "user" || entry.type === "assistant";
 }
 
+/**
+ * Clamps a requested page to the available range and returns the slice bounds.
+ * `from`/`to` are 1-based and inclusive, for display.
+ */
+export function paginate(total: number, page: number, size: number) {
+  const lastPage = Math.max(1, Math.ceil(total / size));
+  const current = Math.min(Math.max(1, Math.floor(page) || 1), lastPage);
+  const start = (current - 1) * size;
+  const end = Math.min(start + size, total);
+  return {
+    current,
+    lastPage,
+    start,
+    end,
+    from: total === 0 ? 0 : start + 1,
+    to: end,
+    hasNewer: current > 1,
+    hasOlder: end < total,
+  };
+}
+
 export function extractRepoName(cwd: string): string {
   const cleaned = cwd.endsWith("/") ? cwd.slice(0, -1) : cwd;
   const segments = cleaned.split("/");
