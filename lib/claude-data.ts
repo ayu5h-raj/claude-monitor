@@ -110,7 +110,7 @@ export async function getAllSessions(): Promise<Session[]> {
             }
           }
 
-          const name = activeList?.find(s => s.sessionId === sessionId)?.name;
+          const name = activeList?.find(s => s.sessionId === sessionId)?.name ?? meta.name;
           sessions.push({ ...meta, status, activeState, name });
         } catch {
           // Skip unreadable files
@@ -156,7 +156,7 @@ export async function getSessionDetail(
             const earliestStart = activeList?.length ? Math.min(...activeList.map(s => s.startedAt)) : Infinity;
             const status: "active" | "completed" = (activeList?.length && stat.mtimeMs >= earliestStart) ? "active" : "completed";
             const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
-            const name = activeList?.find(s => s.sessionId === sessionId)?.name;
+            const name = activeList?.find(s => s.sessionId === sessionId)?.name ?? meta.name;
             const codeImpact = extractCodeImpact(rawEntries);
             return { session: { ...meta, status, activeState, name }, entries: cached.entries, codeImpact };
           }
@@ -169,7 +169,7 @@ export async function getSessionDetail(
           const activeSessArr = activeSessions.get(meta.projectPath);
           const status: "active" | "completed" = (activeSessArr && activeSessArr.some(s => stat.mtimeMs >= s.startedAt)) ? "active" : "completed";
           const activeState = status === "active" ? inferActiveState(rawEntries) : undefined;
-          const name = activeSessArr?.find(s => s.sessionId === sessionId)?.name;
+          const name = activeSessArr?.find(s => s.sessionId === sessionId)?.name ?? meta.name;
 
           sessionDetailCache.set(sessionId, { entries, mtime });
           const codeImpact = extractCodeImpact(rawEntries);

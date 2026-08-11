@@ -47,6 +47,7 @@ next-env.d.ts
 
 # Playwright
 .playwright-cli/
+.playwright/
 
 # Superpowers brainstorm artifacts
 .superpowers/

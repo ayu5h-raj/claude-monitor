@@ -11,6 +11,7 @@ import AsyncDiffViewer from "@/src/components/async-diff-viewer";
 import AsyncCommitLinks from "@/src/components/async-commit-links";
 import AsyncPRLinks from "@/src/components/async-pr-links";
 import AsyncPlanViewer from "@/src/components/async-plan-viewer";
+import AsyncAnalytics from "@/src/components/async-analytics";
 import AsyncTerminalDock from "@/src/components/async-terminal-dock";
 import InsightsPanel from "@/src/components/insights-panel";
 import { getCachedInsights } from "@/lib/insights-cache";
@@ -21,6 +22,7 @@ export const dynamic = "force-dynamic";
 
 const TABS = [
   { key: "conversation", label: "Conversation" },
+  { key: "analytics", label: "Analytics" },
   { key: "insights", label: "Insights" },
   { key: "plan", label: "Plan" },
   { key: "diff", label: "Diff" },
@@ -178,6 +180,11 @@ export default async function SessionDetailPage({
         {activeTab === "conversation" && (
           <Suspense fallback={<ConversationPlaceholder />} key={`conv-${id}`}>
             <AsyncConversation sessionId={id} />
+          </Suspense>
+        )}
+        {activeTab === "analytics" && (
+          <Suspense fallback={<ConversationPlaceholder />} key={`analytics-${id}`}>
+            <AsyncAnalytics sessionId={id} />
           </Suspense>
         )}
         {activeTab === "insights" && (

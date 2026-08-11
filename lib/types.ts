@@ -107,6 +107,7 @@ export interface RawJSONLEntry {
   data?: Record<string, unknown>;
   subtype?: string;
   durationMs?: number;
+  aiTitle?: string;
 }
 
 export interface RawMessage {
