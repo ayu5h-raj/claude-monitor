@@ -139,12 +139,34 @@ describe("computeSessionAnalytics", () => {
   it("estimates cost when the model is in the rate table", () => {
     const result = computeSessionAnalytics(
       makeInput({
-        model: "claude-opus-4-7",
+        model: "claude-opus-5",
         tokenUsage: { input: 1_000_000, output: 0, cacheRead: 0, cacheCreation: 0 },
       }),
     );
-    // 1M input tokens at $15 = $15
-    expect(result.estimatedCostUSD).toBeCloseTo(15, 1);
+    // 1M input tokens at $5 = $5
+    expect(result.estimatedCostUSD).toBeCloseTo(5, 1);
+  });
+
+  it("prices cache reads at 0.1x input and cache writes at 1.25x", () => {
+    const result = computeSessionAnalytics(
+      makeInput({
+        model: "claude-opus-5",
+        tokenUsage: { input: 0, output: 0, cacheRead: 1_000_000, cacheCreation: 1_000_000 },
+      }),
+    );
+    // $5 * 0.1 + $5 * 1.25 = $6.75
+    expect(result.estimatedCostUSD).toBeCloseTo(6.75, 2);
+  });
+
+  it("matches the longest model key, not a shorter prefix", () => {
+    const result = computeSessionAnalytics(
+      makeInput({
+        model: "claude-opus-4-8",
+        tokenUsage: { input: 1_000_000, output: 0, cacheRead: 0, cacheCreation: 0 },
+      }),
+    );
+    // claude-opus-4-8 is $5, not the $15 of the "claude-opus-4" prefix
+    expect(result.estimatedCostUSD).toBeCloseTo(5, 1);
   });
 
   it("returns undefined cost when the model is unknown", () => {

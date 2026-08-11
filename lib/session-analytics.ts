@@ -41,27 +41,36 @@ export interface SessionAnalytics {
   skillCount: number;
 }
 
-const COST_TABLE: Record<string, { input: number; output: number; cache: number }> = {
-  "claude-opus-4-7": { input: 15, output: 75, cache: 1.5 },
-  "claude-opus-4-6": { input: 15, output: 75, cache: 1.5 },
-  "claude-opus-4-5": { input: 15, output: 75, cache: 1.5 },
-  "claude-opus-4": { input: 15, output: 75, cache: 1.5 },
-  "claude-sonnet-4-6": { input: 3, output: 15, cache: 0.3 },
-  "claude-sonnet-4-5": { input: 3, output: 15, cache: 0.3 },
-  "claude-sonnet-4": { input: 3, output: 15, cache: 0.3 },
-  "claude-haiku-4-5": { input: 0.8, output: 4, cache: 0.08 },
-  "claude-haiku-4": { input: 0.8, output: 4, cache: 0.08 },
+// USD per million tokens. Cache reads bill at 0.1x input, cache writes at 1.25x (5-min TTL).
+const COST_TABLE: Record<string, { input: number; output: number }> = {
+  "claude-fable-5": { input: 10, output: 50 },
+  "claude-mythos-5": { input: 10, output: 50 },
+  "claude-opus-5": { input: 5, output: 25 },
+  "claude-opus-4-8": { input: 5, output: 25 },
+  "claude-opus-4-7": { input: 5, output: 25 },
+  "claude-opus-4-6": { input: 5, output: 25 },
+  "claude-opus-4-5": { input: 15, output: 75 },
+  "claude-opus-4": { input: 15, output: 75 },
+  "claude-sonnet-5": { input: 3, output: 15 },
+  "claude-sonnet-4-6": { input: 3, output: 15 },
+  "claude-sonnet-4-5": { input: 3, output: 15 },
+  "claude-sonnet-4": { input: 3, output: 15 },
+  "claude-haiku-4-5": { input: 1, output: 5 },
+  "claude-haiku-4": { input: 1, output: 5 },
 };
 
 function estimateCost(usage: TokenUsage, model: string): number | undefined {
-  const key = Object.keys(COST_TABLE).find((k) => model.startsWith(k));
+  // Longest key first so "claude-opus-4-8" doesn't fall through to "claude-opus-4"
+  const key = Object.keys(COST_TABLE)
+    .sort((a, b) => b.length - a.length)
+    .find((k) => model.startsWith(k));
   if (!key) return undefined;
   const r = COST_TABLE[key];
   return (
     (usage.input / 1_000_000) * r.input +
     (usage.output / 1_000_000) * r.output +
-    (usage.cacheRead / 1_000_000) * r.cache +
-    (usage.cacheCreation / 1_000_000) * r.input
+    (usage.cacheRead / 1_000_000) * r.input * 0.1 +
+    (usage.cacheCreation / 1_000_000) * r.input * 1.25
   );
 }
 
