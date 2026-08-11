@@ -5,6 +5,7 @@ import {
   formatTokenCount,
   classifyToolCall,
   isChatEntry,
+  paginate,
 } from "@/lib/path-utils";
 
 describe("extractRepoName", () => {
@@ -125,6 +126,48 @@ describe("classifyToolCall", () => {
 
   it("ignores blank string fields", () => {
     expect(classifyToolCall("Skill", { skill: "   " }).kind).toBe("tool");
+  });
+});
+
+describe("paginate", () => {
+  it("returns the first page", () => {
+    expect(paginate(7048, 1, 200)).toMatchObject({
+      current: 1,
+      start: 0,
+      end: 200,
+      from: 1,
+      to: 200,
+      hasNewer: false,
+      hasOlder: true,
+    });
+  });
+
+  it("returns a middle page", () => {
+    expect(paginate(7048, 2, 200)).toMatchObject({ start: 200, end: 400, from: 201, to: 400 });
+  });
+
+  it("clamps a page past the end to the last page", () => {
+    const p = paginate(450, 99, 200);
+    expect(p).toMatchObject({ current: 3, start: 400, end: 450, to: 450, hasOlder: false });
+  });
+
+  it("clamps zero and negative pages to the first", () => {
+    expect(paginate(450, 0, 200).current).toBe(1);
+    expect(paginate(450, -5, 200).current).toBe(1);
+  });
+
+  it("handles an empty session", () => {
+    expect(paginate(0, 1, 200)).toMatchObject({
+      current: 1,
+      from: 0,
+      to: 0,
+      hasNewer: false,
+      hasOlder: false,
+    });
+  });
+
+  it("handles a session that fits on one page", () => {
+    expect(paginate(12, 1, 200)).toMatchObject({ to: 12, hasOlder: false, hasNewer: false });
   });
 });
 
