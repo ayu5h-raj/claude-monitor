@@ -56,7 +56,9 @@ next-env.d.ts
 .worktrees/
 
 # Docs (internal planning)
-docs/
+# Use docs/* not docs/ — git won't descend into an excluded directory, which
+# would make the !docs/superpowers/specs/ negation below unreachable.
+docs/*
 !docs/superpowers/
 docs/superpowers/*
 !docs/superpowers/specs/
