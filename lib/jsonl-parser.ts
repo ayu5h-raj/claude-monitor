@@ -244,6 +244,9 @@ export function extractSessionMetadata(
     firstMessage = msg.length > 120 ? msg.slice(0, 120) + "…" : msg;
   }
 
+  // Claude Code writes an "ai-title" line per session; last one wins
+  const name = rawEntries.filter((e) => e.type === "ai-title" && e.aiTitle).pop()?.aiTitle;
+
   const timestamps: Date[] = [];
 
   for (const raw of rawEntries) {
@@ -308,5 +311,6 @@ export function extractSessionMetadata(
     filesChanged,
     toolStats,
     firstMessage,
+    name,
   };
 }
