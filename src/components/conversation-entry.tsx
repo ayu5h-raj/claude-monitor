@@ -1,5 +1,5 @@
 import type { SessionEntry } from "@/lib/types";
-import { formatTokenCount } from "@/lib/path-utils";
+import { formatTokenCount, classifyToolCall, toolKindColor } from "@/lib/path-utils";
 import { renderMessageContent } from "@/src/components/message-renderer";
 
 type EntryProp = Omit<SessionEntry, "timestamp"> & { timestamp: string | Date };
@@ -60,11 +60,19 @@ export default function ConversationEntry({ entry }: { entry: EntryProp }) {
   }
 
   if (entry.type === "tool_use") {
+    const { kind, label, detail } = classifyToolCall(
+      entry.toolName ?? "",
+      entry.toolInput,
+    );
+    const color = toolKindColor(kind);
     return (
-      <div className={`conv-entry conv-entry-tool_use`}>
+      <div
+        className={`conv-entry conv-entry-tool_use`}
+        style={kind === "tool" ? undefined : { borderLeftColor: color }}
+      >
         <div className="conv-entry-header">
-          <span className="conv-entry-type" style={{ color: "var(--amber)" }}>
-            TOOL
+          <span className="conv-entry-type" style={{ color }}>
+            {kind.toUpperCase()}
           </span>
           {entry.toolName && (
             <span
@@ -74,11 +82,16 @@ export default function ConversationEntry({ entry }: { entry: EntryProp }) {
                 fontWeight: "bold",
               }}
             >
-              {entry.toolName}
+              {label}
             </span>
           )}
           <span className="conv-entry-time">{timeStr}</span>
         </div>
+        {detail && (
+          <div className="conv-entry-detail" title={detail}>
+            {detail}
+          </div>
+        )}
         {entry.toolInput && (
           <details>
             <summary>show input</summary>

@@ -37,11 +37,12 @@ export default async function SessionDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; tab?: string }>;
+  searchParams: Promise<{ error?: string; tab?: string; view?: string }>;
 }) {
   const { id } = await params;
-  const { error, tab } = await searchParams;
+  const { error, tab, view } = await searchParams;
   const activeTab: TabKey = (TABS.some(t => t.key === tab) ? tab : "conversation") as TabKey;
+  const chatOnly = view === "chat";
 
   const result = await getSessionDetail(id);
   if (!result) notFound();
@@ -156,7 +157,7 @@ export default async function SessionDetailPage({
         {TABS.map(({ key, label }) => (
           <a
             key={key}
-            href={`/sessions/${id}?tab=${key}`}
+            href={`/sessions/${id}?tab=${key}${chatOnly ? "&view=chat" : ""}`}
             style={{
               color: activeTab === key ? "var(--green)" : "var(--text-muted)",
               fontSize: "12px",
@@ -167,6 +168,24 @@ export default async function SessionDetailPage({
             [{label}]
           </a>
         ))}
+        {activeTab === "conversation" && (
+          <a
+            href={`/sessions/${id}?tab=conversation${chatOnly ? "" : "&view=chat"}`}
+            title={
+              chatOnly
+                ? "Show tool, skill and plugin calls"
+                : "Hide tool calls — show conversation only"
+            }
+            style={{
+              color: chatOnly ? "var(--green)" : "var(--text-muted)",
+              fontSize: "12px",
+              padding: "6px 12px",
+              marginLeft: "auto",
+            }}
+          >
+            [{chatOnly ? "show all" : "chat only"}]
+          </a>
+        )}
       </div>
 
       {/* Main area -- independent Suspense zones, keyed by id */}
@@ -178,8 +197,8 @@ export default async function SessionDetailPage({
         <div id="ide-sidebar-drag" className="ide-sidebar-drag">{" "}</div>
 
         {activeTab === "conversation" && (
-          <Suspense fallback={<ConversationPlaceholder />} key={`conv-${id}`}>
-            <AsyncConversation sessionId={id} />
+          <Suspense fallback={<ConversationPlaceholder />} key={`conv-${id}-${chatOnly}`}>
+            <AsyncConversation sessionId={id} chatOnly={chatOnly} />
           </Suspense>
         )}
         {activeTab === "analytics" && (
