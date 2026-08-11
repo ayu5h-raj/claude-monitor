@@ -119,7 +119,7 @@ async function startServer(port: number): Promise<Server> {
 
     let ptyProcess: pty.IPty;
     try {
-      ptyProcess = pty.spawn(shell, ["-l", "-c", claudeCmd], {
+      ptyProcess = pty.spawn(shell, ["-l", "-i", "-c", claudeCmd], {
         name: "xterm-256color",
         cols: 120,
         rows: 30,
