@@ -377,6 +377,17 @@ a {
   font-size: 11px;
 }
 
+/* Skill args / subagent description shown beside the badge. Ellipsised rather
+   than truncated in JS so it adapts to width; full text is in the title attr. */
+.conv-entry-detail {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .conv-entry-content {
   color: var(--text-primary);
   word-break: break-word;

@@ -1,13 +1,21 @@
 import { getSessionDetail } from "@/lib/claude-data";
 import ConversationEntry from "@/src/components/conversation-entry";
 import LiveSession from "@/src/components/live-session";
+import { isChatEntry } from "@/lib/path-utils";
 
-export default async function AsyncConversation({ sessionId }: { sessionId: string }) {
+export default async function AsyncConversation({
+  sessionId,
+  chatOnly = false,
+}: {
+  sessionId: string;
+  chatOnly?: boolean;
+}) {
   const result = await getSessionDetail(sessionId);
   if (!result) return null;
   const { session, entries } = result;
 
-  const serializedEntries = entries
+  // Filter before serializing so the client payload shrinks too.
+  const serializedEntries = (chatOnly ? entries.filter(isChatEntry) : entries)
     .map((e) => ({
       ...e,
       timestamp: e.timestamp instanceof Date ? e.timestamp.toISOString() : e.timestamp,
@@ -17,7 +25,11 @@ export default async function AsyncConversation({ sessionId }: { sessionId: stri
   return (
     <div className="ide-center">
       {session.status === "active" ? (
-        <LiveSession sessionId={session.id} initialEntries={serializedEntries} />
+        <LiveSession
+          sessionId={session.id}
+          initialEntries={serializedEntries}
+          chatOnly={chatOnly}
+        />
       ) : (
         <div>
           {serializedEntries.map((entry, i) => (

@@ -3,10 +3,14 @@
 import { useEffect, useState, useRef } from "react";
 import type { SerializedSessionEntry, TokenUsage } from "@/lib/types";
 import { renderMessageContent } from "@/src/components/message-renderer";
+import { classifyToolCall, toolKindColor, isChatEntry } from "@/lib/path-utils";
 
 interface LiveSessionProps {
   sessionId: string;
   initialEntries: SerializedSessionEntry[];
+  /** When true, streamed entries are filtered to conversation text, matching
+   *  the server-side filter already applied to initialEntries. */
+  chatOnly?: boolean;
 }
 
 function getTimeStr(ts: string): string {
@@ -87,21 +91,38 @@ function EntryView({ entry }: { entry: SerializedSessionEntry }) {
   }
 
   if (entry.type === "tool_use") {
+    const tool = classifyToolCall(entry.toolName ?? "", entry.toolInput);
+    const toolColor = toolKindColor(tool.kind);
     return (
       <div
         style={{
-          borderLeft: `2px solid ${borderColor}`,
+          borderLeft: `2px solid ${toolColor}`,
           padding: "8px 12px",
           marginBottom: "4px",
         }}
       >
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <span style={{ color: borderColor, fontSize: "10px", fontWeight: "bold", letterSpacing: "0.08em" }}>
-            {label}
+          <span style={{ color: toolColor, fontSize: "10px", fontWeight: "bold", letterSpacing: "0.08em" }}>
+            {tool.kind.toUpperCase()}
           </span>
-          <span style={{ color: "var(--blue)", fontSize: "11px" }}>{entry.toolName}</span>
+          <span style={{ color: "var(--blue)", fontSize: "11px" }}>{tool.label}</span>
           <span style={{ color: "var(--text-muted)", fontSize: "10px" }}>{timeStr}</span>
         </div>
+        {tool.detail && (
+          <div
+            title={tool.detail}
+            style={{
+              color: "var(--text-muted)",
+              fontSize: "11px",
+              marginTop: "2px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {tool.detail}
+          </div>
+        )}
         {entry.toolInput && (
           <details style={{ marginTop: "4px" }}>
             <summary style={{ cursor: "pointer", color: "var(--text-muted)", fontSize: "10px" }}>
@@ -173,7 +194,7 @@ function EntryView({ entry }: { entry: SerializedSessionEntry }) {
   return null;
 }
 
-export default function LiveSession({ sessionId, initialEntries }: LiveSessionProps) {
+export default function LiveSession({ sessionId, initialEntries, chatOnly }: LiveSessionProps) {
   const [newEntries, setNewEntries] = useState<SerializedSessionEntry[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -217,7 +238,11 @@ export default function LiveSession({ sessionId, initialEntries }: LiveSessionPr
     }
   }, [newEntries.length]);
 
-  const allEntries = [...newEntries.map((e) => ({
+  // initialEntries arrive pre-filtered from the server; streamed entries have
+  // not been through that filter, so apply the same predicate here.
+  const streamed = chatOnly ? newEntries.filter(isChatEntry) : newEntries;
+
+  const allEntries = [...streamed.map((e) => ({
     ...e,
     _isNew: true as const,
   })).reverse(), ...initialEntries.map((e) => ({

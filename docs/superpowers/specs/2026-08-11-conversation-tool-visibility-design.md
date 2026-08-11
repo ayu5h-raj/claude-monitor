@@ -1,7 +1,10 @@
 # Conversation Tool Visibility
 
 **Date:** 2026-08-11
-**Status:** Approved, not yet implemented
+**Status:** Implemented
+
+Revised after two independent subagent reviews. Their corrections are folded in
+below; see Review corrections at the end for what the first draft got wrong.
 
 ## Problem
 
@@ -15,8 +18,10 @@ The data is not missing. `mapRawEntriesToSessionEntries` already emits these as
 `conversation-entry.tsx` already renders them. They are simply
 indistinguishable from routine tool noise.
 
-Local session history contains 39 `Skill` calls, 375 `Agent` calls, and 758
-MCP calls across 52 distinct tools — all currently flattened.
+Within the scope the app actually reads — `lib/claude-data.ts:85` uses a
+non-recursive `readdir` per project dir, so nested session files are invisible —
+local history contains 25 `Skill` calls, 285 `Agent` calls, and 689 MCP calls
+across 52 distinct tools, all currently flattened.
 
 A second, related need: an option to hide tool calls entirely and read the
 conversation as plain user/assistant dialogue.
@@ -38,14 +43,18 @@ conversation as plain user/assistant dialogue.
 
 ## Design
 
-### New module: `lib/tool-display.ts`
+### Helpers in `lib/path-utils.ts`
 
-A dedicated module rather than an addition to `path-utils.ts`, since none of
-this concerns paths.
+No new module. `path-utils.ts` is already the small-display-helper bucket —
+three of its four existing exports have nothing to do with paths — and it is
+already imported by both renderers. It is also client-safe, which matters:
+`live-session.tsx` is a `"use client"` component, so importing from
+`session-analytics.ts` on that path would pull the cost tables into the client
+bundle.
 
-**`parseMcpName(name)`** — moved here from `lib/session-analytics.ts:85`, where
-it is currently private. `session-analytics.ts` imports it back, leaving one
-copy.
+`parseMcpName` in `session-analytics.ts:85` is **not** moved or exported. The
+reuse would be a three-line `split("__")` — the same size as the import
+statement replacing it — so `session-analytics.ts` is untouched.
 
 **`classifyToolCall(toolName, toolInput)`** → `{ kind, label, detail }`:
 
@@ -56,24 +65,36 @@ copy.
 | `Agent`            | `agent` | `input.subagent_type` ?? `general-purpose` | `input.description` |
 | anything else      | `tool`  | the tool name                         | —                  |
 
-**`isChatEntry(entry)`** — true for `user` and `assistant` entries whose text
-content is non-empty.
+**`isChatEntry(entry)`** — true for `user` and `assistant` entries. No
+empty-content guard: `jsonl-parser.ts:107` only pushes an assistant entry when
+`textParts.length > 0`, so empty entries cannot occur.
 
 ### Inline classification
 
-The `tool_use` branch of `conversation-entry.tsx` calls `classifyToolCall` and
-renders badge text and colour by kind:
+**Two** renderers need this, not one. `conversation-entry.tsx` handles completed
+sessions; `live-session.tsx` has its own separate `tool_use` branch and renders
+**active** sessions. Changing only the first would leave the feature silently
+absent on exactly the sessions being watched live.
 
-| kind    | badge   | colour                                              |
-| ------- | ------- | --------------------------------------------------- |
-| `skill` | `SKILL` | `var(--purple)` — matches the Analytics tab's existing colour for Skill |
-| `mcp`   | `MCP`   | `var(--cyan)`                                       |
-| `agent` | `AGENT` | `var(--blue)`                                       |
-| `tool`  | `TOOL`  | `var(--amber)` — unchanged                          |
+Badge text is `kind.toUpperCase()`. Colours mirror `colorForTool()` in
+`session-analytics.tsx:34-40` so the conversation stream and the Analytics tab
+agree:
 
-`detail` renders as an inline line beneath the label, truncated at 120
-characters. The existing collapsed "show input" block is retained unchanged, so
-the full payload is always still reachable.
+| kind    | badge   | colour                                    |
+| ------- | ------- | ----------------------------------------- |
+| `skill` | `SKILL` | `var(--purple)`                           |
+| `agent` | `AGENT` | `var(--purple)` — Analytics colours Agent purple too |
+| `mcp`   | `MCP`   | `var(--cyan)`                             |
+| `tool`  | `TOOL`  | `var(--amber)` — unchanged                |
+
+Because `SKILL` and `ASSISTANT` are both purple, the row's `border-left` is also
+set to the kind colour, so a skill row is distinguishable from an assistant
+message at a glance rather than by badge colour alone.
+
+`detail` renders beneath the label, ellipsised in CSS (`.conv-entry-detail`)
+rather than truncated to a character count in JS — it adapts to the available
+width, and `title={detail}` keeps the full string on hover, so nothing is lost.
+The existing collapsed "show input" block is retained unchanged.
 
 ### Chat-only filter
 
@@ -81,6 +102,11 @@ the full payload is always still reachable.
   destructure. `view === "chat"` enables the filter.
 - `async-conversation.tsx` accepts a `chatOnly` prop and applies `isChatEntry`
   **before** serializing entries, so the filtered payload is smaller as well.
+- `LiveSession` also takes `chatOnly` and applies the same predicate to
+  SSE-streamed entries. Without this, an active session in chat-only mode would
+  start clean and then progressively refill with tool rows as they stream in.
+- The tab links carry `view` forward, so toggling tabs does not silently reset
+  the filter.
 - The toggle is a plain `<a>` beside the tab bar, carrying the current `tab`
   forward (`?tab=conversation&view=chat`). Rendered only on the conversation
   tab, where it is meaningful.
@@ -98,40 +124,60 @@ All malformed inputs degrade to the current generic `TOOL` row rather than
 rendering `undefined`:
 
 - `Skill` call with no `input.skill`
-- `Agent` call with no `subagent_type` — 64 of 375 local calls — falls back to
-  `general-purpose`
+- `Agent` call with no `subagent_type` — 82 of 285 local calls, ~29% — falls
+  back to `general-purpose`, the tool's own default
 - `mcp__foo` with no third segment — renders the server alone, no tool
+- `mcp__` bare prefix, where the server segment is empty too — falls back to a
+  generic row
 - `toolInput` absent entirely — label-only row
-
-One filtering edge case: the parser emits assistant text and tool calls as
-*separate* entries, so an assistant turn consisting only of tool calls leaves an
-entry with empty text content. `isChatEntry` drops these; without that,
-chat-only mode would render blank rows.
+- blank-string fields (`{skill: "   "}`) treated as absent
 
 ## Testing
 
-`__tests__/tool-display.test.ts`:
-
-- `classifyToolCall` across all four kinds
-- each of the four malformed inputs above
-- `isChatEntry` including the empty-content assistant entry
-
-Both are pure functions, testable without React, matching the existing test
-pattern in `__tests__/`.
+Appended to the existing `__tests__/path-utils.test.ts` rather than a new file:
+`classifyToolCall` across all four kinds, each malformed input above, and
+`isChatEntry`. Pure functions, no React.
 
 ## Files
 
-| File                                  | Change                                |
-| ------------------------------------- | ------------------------------------- |
-| `lib/tool-display.ts`                 | new — three functions above           |
-| `__tests__/tool-display.test.ts`      | new                                   |
-| `lib/session-analytics.ts`            | import `parseMcpName`, drop local copy |
-| `src/components/conversation-entry.tsx` | classify in the `tool_use` branch    |
-| `src/components/async-conversation.tsx` | accept `chatOnly`, filter entries    |
-| `src/app/sessions/[id]/page.tsx`      | read `view` param, render toggle      |
+| File                                    | Change                                  |
+| --------------------------------------- | --------------------------------------- |
+| `lib/path-utils.ts`                     | `classifyToolCall`, `toolKindColor`, `isChatEntry` |
+| `src/components/conversation-entry.tsx` | classify in the `tool_use` branch       |
+| `src/components/live-session.tsx`       | same classification + filter streamed entries |
+| `src/components/async-conversation.tsx` | accept `chatOnly`, filter before serializing |
+| `src/app/sessions/[id]/page.tsx`        | read `view`, render toggle, carry it across tabs |
+| `src/app/globals.css`                   | `.conv-entry-detail` ellipsis rule      |
+| `__tests__/path-utils.test.ts`          | appended cases                          |
 
-No changes to `lib/types.ts` or `lib/jsonl-parser.ts`. No new client
-components.
+No new files. No changes to `lib/types.ts`, `lib/jsonl-parser.ts`, or
+`lib/session-analytics.ts`. No new client components.
+
+## Review corrections
+
+What the first draft got wrong, caught by review before implementation:
+
+1. **False premise.** It claimed the parser leaves empty-content assistant
+   entries when a turn is only tool calls. `jsonl-parser.ts:107` guards that
+   push with `if (textParts.length > 0)`; 0 of 2955 assistant entries are
+   empty. The non-empty check `isChatEntry` was designed around, and its test
+   case, were both removed.
+2. **Missed renderer.** `live-session.tsx` renders active sessions with its own
+   `tool_use` branch. The original Files table omitted it, so both features
+   would have no-opped on live sessions, and streamed entries would have
+   bypassed the chat filter entirely.
+3. **Unreproducible counts.** 39/375/758 matched neither the app-visible nor the
+   recursive scope. Corrected to 25/285/689. "64 of 375 lack `subagent_type`"
+   was actually 82 — the draft missed the `{description, prompt}` bucket.
+4. **Colour inconsistency.** The draft justified purple for skills by
+   consistency with the Analytics tab, then assigned agents blue — where
+   Analytics colours them purple.
+5. **Wrong blast radius.** `lib/search.ts` consumes `RawJSONLEntry`, not
+   `SessionEntry`, and `lib/sse-helpers.ts` references neither. The real
+   `SessionEntry` consumers omitted from the list are `lib/todos.ts:46` and
+   `src/components/async-plan-viewer.tsx:15`.
+6. **Over-packaging.** A new module, a cross-module function move, and a
+   separate test file for ~15 lines of logic. All three dropped.
 
 ## Rejected alternatives
 
@@ -140,8 +186,9 @@ components.
 serialization boundary and creates a second thing to keep in sync, for no gain.
 
 **New `SessionEntry` union members** (`"skill" | "mcp" | "agent"`). Largest
-blast radius: every `entry.type ===` switch, plus the SSE helpers, export route,
-and search would need updating — all for a purely visual change.
+blast radius: every `entry.type ===` switch — `lib/todos.ts:46`,
+`src/components/async-plan-viewer.tsx:15`, the SSE route, and the export route —
+all for a purely visual change.
 
 **Pure-CSS checkbox toggle** instead of a URL param. Instant and still
 JS-free, but introduces a pattern the repo does not use elsewhere, and the
